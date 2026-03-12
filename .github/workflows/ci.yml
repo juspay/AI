@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Check flake
+        run: nix flake check --accept-flake-config
+
+      - name: Build package
+        run: nix build . --no-link --print-out-paths --accept-flake-config > store-path
+
+      - name: Attic login
+        if: github.ref == 'refs/heads/main'
+        run: attic login chutney https://cache.nixos.asia ${{ secrets.ATTIC_LOGIN_TOKEN }}
+
+      - name: Push to attic
+        if: github.ref == 'refs/heads/main'
+        run: attic push chutney:oss $(cat store-path)
