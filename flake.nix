@@ -20,5 +20,7 @@
 
         apps.default.program = lib.getExe' self'.packages.default "opencode";
       };
+
+      flake.homeModules.default = import ./modules;
     };
 }

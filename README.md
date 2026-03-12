@@ -18,7 +18,7 @@ nix run --accept-flake-config github:juspay/oc
 - Add GitHub workflow for daily flake updates with auto-merge
 - Platforms: `x86_64-linux`, `aarch64-linux`, `aarch64-darwin`
 
-### Milestone 2: Company Configuration
+### Milestone 2: Company Configuration ✓
 
 Add Juspay-specific LiteLLM configuration:
 
@@ -26,6 +26,28 @@ Add Juspay-specific LiteLLM configuration:
 - Define Juspay provider with `apiKey = "{env:JUSPAY_API_KEY}"`
 - Add model definitions (glm-latest, claude variants, gemini, etc.)
 - Create wrapper script to check for API key
+
+#### Usage
+
+Add to your home-manager configuration:
+
+```nix
+{
+  inputs.oc.url = "github:juspay/oc";
+  
+  outputs = { inputs, ... }: {
+    homeManagerModules.yourmodule = {
+      imports = [ inputs.oc.homeModules.default ];
+    };
+  };
+}
+```
+
+Set your API key before running:
+
+```bash
+export JUSPAY_API_KEY=your-api-key
+```
 
 ## Related
 
