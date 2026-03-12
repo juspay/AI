@@ -42,6 +42,12 @@ Add to your home-manager configuration:
 }
 ```
 
+To update opencode to the latest version (the flake.lock is auto-updated daily):
+
+```bash
+nix flake update oc
+```
+
 ## Related
 
 - [OpenCode Documentation](https://opencode.ai/docs/)
