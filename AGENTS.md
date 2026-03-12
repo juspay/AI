@@ -7,3 +7,9 @@ nix run . -- --version
 ```
 
 This should print the opencode version.
+
+To run CI locally (including the home-manager example test):
+
+```bash
+vira ci -b
+```
