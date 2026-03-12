@@ -1,7 +1,5 @@
 # OpenCode Nix
 
-> **Status: Work In Progress**
-
 One-click access to OpenCode for Nix users.
 
 ## Quick Start
@@ -10,25 +8,41 @@ One-click access to OpenCode for Nix users.
 nix run --accept-flake-config github:juspay/oc
 ```
 
-## Milestones
+## Juspay Configuration
 
-### Milestone 1: Basic `nix run` Launch ✓
+Run with Juspay-specific LiteLLM configuration:
 
-- Create `flake.nix` using [llm-agents.nix](https://github.com/numtide/llm-agents.nix)
-- Add GitHub workflow for daily flake updates with auto-merge
-- Platforms: `x86_64-linux`, `aarch64-linux`, `aarch64-darwin`
+```bash
+# Set your API key
+export JUSPAY_API_KEY=your-api-key
 
-### Milestone 2: Company Configuration
+# Run with Juspay configuration
+nix run --accept-flake-config github:juspay/oc#juspay
+```
 
-Add Juspay-specific LiteLLM configuration:
+### With home-manager
 
-- Create home-manager module using upstream `programs.opencode`
-- Define Juspay provider with `apiKey = "{env:JUSPAY_API_KEY}"`
-- Add model definitions (glm-latest, claude variants, gemini, etc.)
-- Create wrapper script to check for API key
+Add to your home-manager configuration:
+
+```nix
+{
+  inputs.oc.url = "github:juspay/oc";
+  
+  outputs = { inputs, ... }: {
+    homeConfigurations.yourhost = inputs.home-manager.lib.homeManagerConfiguration {
+      pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
+      modules = [
+        inputs.oc.homeModules.default
+        {
+          programs.opencode.package = inputs.oc.packages.x86_64-linux.default;
+        }
+      ];
+    };
+  };
+}
+```
 
 ## Related
 
 - [OpenCode Documentation](https://opencode.ai/docs/)
 - [llm-agents.nix](https://github.com/numtide/llm-agents.nix)
-- [Reference Implementation](https://github.com/srid/nixos-config/pull/103)

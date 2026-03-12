@@ -9,6 +9,10 @@
         [ "x86_64-linux"
         , "aarch64-darwin"
         ]
+    , build.flakes =
+        [ "."
+        , "./examples/home-manager" { overrideInputs = [("oc", ".")] }
+        ]
     , signoff.enable = True
     , cache.url = if
         | isMain -> Just "https://cache.nixos.asia/oss"

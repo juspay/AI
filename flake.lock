@@ -170,7 +170,11 @@
     "root": {
       "inputs": {
         "flake-parts": "flake-parts",
-        "llm-agents": "llm-agents"
+        "llm-agents": "llm-agents",
+        "nixpkgs": [
+          "llm-agents",
+          "nixpkgs"
+        ]
       }
     },
     "systems": {
