@@ -9,6 +9,7 @@
         [ "x86_64-linux"
         , "aarch64-darwin"
         ]
+    , signoff.enable = True
     , cache.url = if
         | isMain -> Just "https://cache.nixos.asia/oss"
         | otherwise -> Nothing
