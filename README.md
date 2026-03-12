@@ -29,6 +29,18 @@ Add Juspay-specific LiteLLM configuration:
 
 #### Usage
 
+**Quick start with `nix run`:**
+
+```bash
+# Set your API key
+export JUSPAY_API_KEY=your-api-key
+
+# Run with Juspay configuration
+nix run --accept-flake-config github:juspay/oc#juspay
+```
+
+**With home-manager:**
+
 Add to your home-manager configuration:
 
 ```nix
@@ -41,12 +53,6 @@ Add to your home-manager configuration:
     };
   };
 }
-```
-
-Set your API key before running:
-
-```bash
-export JUSPAY_API_KEY=your-api-key
 ```
 
 ## Related
