@@ -2,6 +2,9 @@
 
 One-click access to OpenCode for Nix users.
 
+<img width="1320" height="1098" alt="image" src="https://github.com/user-attachments/assets/8a79ff2d-24c6-4142-a012-46687ab8bdeb" />
+
+
 ## Quick Start
 
 ```bash
