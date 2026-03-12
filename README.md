@@ -29,8 +29,14 @@ Add to your home-manager configuration:
   inputs.oc.url = "github:juspay/oc";
   
   outputs = { inputs, ... }: {
-    homeManagerModules.yourmodule = {
-      imports = [ inputs.oc.homeModules.default ];
+    homeConfigurations.yourhost = inputs.home-manager.lib.homeManagerConfiguration {
+      pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
+      modules = [
+        inputs.oc.homeModules.default
+        {
+          programs.opencode.package = inputs.oc.packages.x86_64-linux.default;
+        }
+      ];
     };
   };
 }
