@@ -16,13 +16,12 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
 
-      perSystem = { self', lib, system, inputs', ... }:
-      let
-        pkgs = import nixpkgs {
+      perSystem = { self', lib, pkgs, system, inputs', ... }: {
+        _module.args.pkgs = import nixpkgs {
           inherit system;
           config.allowUnfree = true;
         };
-      in {
+
         packages = {
           default = inputs'.llm-agents.packages.opencode;
           juspay = import ./modules/juspay/package.nix { inherit pkgs lib; };
