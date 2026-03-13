@@ -13,6 +13,9 @@ nix run github:juspay/oc
 
 ## Juspay Configuration
 
+> [!NOTE]
+> For Juspay people: `JUSPAY_API_KEY` needs to be set and can be created at https://grid.ai.juspay.net/dashboard (requires VPN).
+
 Run with Juspay-specific LiteLLM configuration:
 
 ```bash
