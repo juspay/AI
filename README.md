@@ -15,7 +15,7 @@ One-click OpenCode for Juspay.
 
 ### One-click
 
-Config embedded in package, no config file created:
+Config embedded in package (read-only, defined in [models.nix](modules/juspay/models.nix)). Use Default or home-manager approach below to customize:
 
 ```bash
 export JUSPAY_API_KEY=your-api-key
@@ -24,7 +24,7 @@ nix run github:juspay/oc#oneclick
 
 ### Default
 
-Auto-creates `~/.config/opencode/opencode.json` on first run:
+Auto-creates `~/.config/opencode/opencode.json` on first run. Edit this file to customize:
 
 ```bash
 export JUSPAY_API_KEY=your-api-key
