@@ -1,6 +1,6 @@
 { pkgs, lib }:
 let
-  juspaySettings = import ./settings.nix;
+  juspaySettings = import ../modules/juspay/settings.nix;
   jsonFormat = pkgs.formats.json { };
   configFile = jsonFormat.generate "opencode.json" ({
     "$schema" = "https://opencode.ai/config.json";

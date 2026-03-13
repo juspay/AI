@@ -28,9 +28,9 @@
         };
 
         packages = {
-          default = pkgs.callPackage ./modules/juspay/package-standalone.nix { };
+          default = pkgs.callPackage ./packages/default.nix { };
           opencode = pkgs.opencode;
-          oneclick = pkgs.callPackage ./modules/juspay/package.nix { };
+          oneclick = pkgs.callPackage ./packages/oneclick.nix { };
         };
 
         apps = {
