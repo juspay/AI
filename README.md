@@ -8,7 +8,7 @@ One-click access to OpenCode for Nix users.
 ## Quick Start
 
 ```bash
-nix run --accept-flake-config github:juspay/oc
+nix run github:juspay/oc
 ```
 
 ## Juspay Configuration
@@ -20,7 +20,7 @@ Run with Juspay-specific LiteLLM configuration:
 export JUSPAY_API_KEY=your-api-key
 
 # Run with Juspay configuration
-nix run --accept-flake-config github:juspay/oc#juspay
+nix run github:juspay/oc#juspay
 ```
 
 ### With home-manager
@@ -50,6 +50,20 @@ To update opencode to the latest version (the flake.lock is auto-updated daily):
 ```bash
 nix flake update oc
 ```
+
+## Tips
+
+### Web UI
+
+OpenCode can run as a web application in your browser:
+
+```bash
+nix run github:juspay/oc#juspay -- web
+```
+
+This starts a local server and opens OpenCode in your default browser. Sessions are shared between the web UI and CLI, so you can switch between them seamlessly. You can also specify a port or make it accessible on your network with `--port 4096 --hostname 0.0.0.0`.
+
+See the [OpenCode Web docs](https://opencode.ai/docs/web/) for more.
 
 ## Related
 
