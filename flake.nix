@@ -1,5 +1,5 @@
 {
-  description = "One-click access to OpenCode for Nix users";
+  description = "One-click OpenCode for Juspay";
 
   nixConfig = {
     extra-substituters = "https://cache.nixos.asia/oss";
@@ -28,15 +28,15 @@
         };
 
         packages = {
-          default = pkgs.opencode;
+          default = pkgs.callPackage ./modules/juspay/package-standalone.nix { };
+          opencode = pkgs.opencode;
           juspay = pkgs.callPackage ./modules/juspay/package.nix { };
-          juspay-standalone = pkgs.callPackage ./modules/juspay/package-standalone.nix { };
         };
 
         apps = {
           default.program = lib.getExe' self'.packages.default "opencode";
+          opencode.program = lib.getExe' self'.packages.opencode "opencode";
           juspay.program = lib.getExe' self'.packages.juspay "opencode";
-          juspay-standalone.program = lib.getExe' self'.packages.juspay-standalone "opencode";
         };
       };
 

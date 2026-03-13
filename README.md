@@ -1,6 +1,9 @@
 # OpenCode Nix
 
-One-click access to OpenCode for Nix users.
+One-click OpenCode for Juspay.
+
+> [!IMPORTANT]
+> This flake is for **Juspay employees only**. It provides pre-configured OpenCode with Juspay's internal LLM API.
 
 <img width="1320" height="1098" alt="image" src="https://github.com/user-attachments/assets/8a79ff2d-24c6-4142-a012-46687ab8bdeb" />
 
@@ -11,46 +14,45 @@ One-click access to OpenCode for Nix users.
 nix run github:juspay/oc
 ```
 
-## Juspay Configuration
+First run creates `~/.config/opencode/opencode.json` with Juspay configuration.
+
+## Configuration
 
 > [!NOTE]
-> For Juspay people: `JUSPAY_API_KEY` needs to be set and can be created at https://grid.ai.juspay.net/dashboard (requires VPN).
+> `JUSPAY_API_KEY` is required and can be created at https://grid.ai.juspay.net/dashboard (requires VPN).
 
 ### Variants
 
-There are three package variants available:
-
 | Variant | Description |
 |---------|-------------|
-| `#default` | Upstream OpenCode, no Juspay configuration |
-| `#juspay` | Requires `JUSPAY_API_KEY`, config embedded via env var |
-| `#juspay-standalone` | Requires `JUSPAY_API_KEY`, auto-creates config file on first run |
+| `#default` | Auto-creates config file on first run |
+| `#juspay` | Config embedded via env var, requires `JUSPAY_API_KEY` |
+| `#opencode` | Upstream OpenCode, no Juspay configuration |
+
+### Using `#default`
+
+```bash
+nix run github:juspay/oc
+```
+
+On first run, creates `~/.config/opencode/opencode.json` with Juspay config. Edit this file to customize.
 
 ### Using `#juspay`
 
 ```bash
-# Set your API key
 export JUSPAY_API_KEY=your-api-key
-
-# Run with Juspay configuration
 nix run github:juspay/oc#juspay
 ```
 
-This is useful when you want the Juspay configuration to be embedded in the package and not have to manage a config file.
+Config is embedded in the package. No config file is created.
 
-### Using `#juspay-standalone`
-
-This variant automatically creates the config file on first run if it doesn't exist:
+### Using `#opencode`
 
 ```bash
-# Set your API key
-export JUSPAY_API_KEY=your-api-key
-
-# Run - will create ~/.config/opencode/opencode.json if missing
-nix run github:juspay/oc#juspay-standalone
+nix run github:juspay/oc#opencode
 ```
 
-This is useful when you want persistent config that you can customize later.
+Vanilla OpenCode without any Juspay configuration.
 
 ### With home-manager
 
@@ -87,7 +89,7 @@ nix flake update oc
 OpenCode can run as a web application in your browser:
 
 ```bash
-nix run github:juspay/oc#juspay -- web
+nix run github:juspay/oc -- web
 ```
 
 This starts a local server and opens OpenCode in your default browser. Sessions are shared between the web UI and CLI, so you can switch between them seamlessly. You can also specify a port or make it accessible on your network with `--port 4096 --hostname 0.0.0.0`.

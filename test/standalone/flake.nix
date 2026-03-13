@@ -1,5 +1,5 @@
 {
-  description = "OpenCode juspay-standalone test";
+  description = "OpenCode default package test";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

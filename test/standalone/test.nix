@@ -1,6 +1,6 @@
 { oc }:
 {
-  name = "opencode-juspay-standalone";
+  name = "opencode-default";
 
   nodes.machine = { pkgs, ... }: {
     users.users.testuser = {
@@ -9,7 +9,7 @@
     };
 
     environment.systemPackages = [
-      oc.packages.${pkgs.stdenv.hostPlatform.system}.juspay-standalone
+      oc.packages.${pkgs.stdenv.hostPlatform.system}.default
     ];
 
     system.stateVersion = "24.05";
@@ -59,6 +59,6 @@
     else:
         raise Exception("Config file was unexpectedly modified")
 
-    print("✅ All juspay-standalone tests passed")
+    print("✅ All default package tests passed")
   '';
 }
