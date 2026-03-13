@@ -10,32 +10,27 @@ One-click OpenCode for Juspay.
 
 ## Quick Start
 
-```bash
-nix run github:juspay/oc
-```
-
-First run creates `~/.config/opencode/opencode.json` with Juspay configuration.
-
 > [!NOTE]
 > `JUSPAY_API_KEY` is required and can be created at https://grid.ai.juspay.net/dashboard (requires VPN).
 
-## Variants
+### One-click
 
-| Variant | Description |
-|---------|-------------|
-| `#default` | Auto-creates config file on first run |
-| `#oneclick` | Config embedded via env var, no config file created |
-
-### Using `#oneclick`
+Config embedded in package, no config file created:
 
 ```bash
 export JUSPAY_API_KEY=your-api-key
 nix run github:juspay/oc#oneclick
 ```
 
-## With home-manager
+### Default
 
-Add to your home-manager configuration:
+Auto-creates `~/.config/opencode/opencode.json` on first run:
+
+```bash
+nix run github:juspay/oc
+```
+
+### With home-manager
 
 ```nix
 {
