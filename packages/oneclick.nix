@@ -1,4 +1,4 @@
-{ pkgs, lib, opencode, configFile }:
+{ pkgs, lib, opencode, configFile, skillsSrc }:
 let
   initScript = ''
     if [ -z "$JUSPAY_API_KEY" ]; then
@@ -8,6 +8,11 @@ let
       exit 1
     fi
   '';
+  configDir = pkgs.runCommand "opencode-config-dir" { } ''
+    mkdir -p $out
+    ln -s ${configFile} $out/opencode.json
+    ln -s ${skillsSrc}/skills $out/skills
+  '';
 in
 pkgs.runCommand "opencode-juspay" {
   nativeBuildInputs = [ pkgs.makeWrapper ];
@@ -16,5 +21,5 @@ pkgs.runCommand "opencode-juspay" {
   mkdir -p $out/bin
   makeWrapper ${lib.getExe opencode} $out/bin/opencode \
     --run '${initScript}' \
-    --set OPENCODE_CONFIG ${configFile}
+    --set OPENCODE_CONFIG_DIR ${configDir}
 ''

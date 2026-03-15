@@ -12,7 +12,8 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       checks.${system} = {
-        opencode-juspay-standalone-test = pkgs.testers.runNixOSTest (import ./test.nix { inherit oc; });
+        default = pkgs.testers.runNixOSTest (import ./test.nix { inherit oc; });
+        oneclick = pkgs.testers.runNixOSTest (import ./test-oneclick.nix { inherit oc; });
       };
     };
 }
