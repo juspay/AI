@@ -15,7 +15,7 @@ One-click OpenCode for Juspay.
 
 ### One-click
 
-Config embedded in package (read-only, defined in [models.nix](modules/juspay/models.nix)). Use Default or home-manager approach below to customize:
+Config and skills embedded in package. Skills from [juspay/skills](https://github.com/juspay/skills) (nix-flake, nix-haskell) are bundled automatically:
 
 ```bash
 export JUSPAY_API_KEY=your-api-key
@@ -33,6 +33,8 @@ nix run github:juspay/oc
 
 ### With home-manager
 
+Basic setup (no skills):
+
 ```nix
 {
   inputs.oc.url = "github:juspay/oc";
@@ -49,6 +51,17 @@ nix run github:juspay/oc
     };
   };
 }
+```
+
+With skills from [juspay/skills](https://github.com/juspay/skills):
+
+```nix
+modules = [
+  inputs.oc.homeModules.with-skills
+  {
+    programs.opencode.package = inputs.oc.packages.x86_64-linux.default;
+  }
+];
 ```
 
 To update opencode to the latest version (the flake.lock is auto-updated daily):
