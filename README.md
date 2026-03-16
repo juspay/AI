@@ -97,4 +97,4 @@ See the [OpenCode Web docs](https://opencode.ai/docs/web/) for more.
 - [OpenCode Documentation](https://opencode.ai/docs/) — Full docs on usage, configuration, and providers
 - [OpenCode GitHub](https://github.com/anomalyco/opencode) — The upstream OpenCode project
 - [llm-agents.nix](https://github.com/numtide/llm-agents.nix) — The upstream Nix packaging that this flake builds on
-- [juspay/skills](https://github.com/juspay/skills) — Juspay's OpenCode skills (Nix flake, Nix Haskell, etc.)
+- [juspay/skills](https://github.com/juspay/skills) — Juspay's AI skills
