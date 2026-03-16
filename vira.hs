@@ -11,6 +11,7 @@
         ]
     , build.flakes =
         [ "."
+        , "./doc/demo" { overrideInputs = [("oc", ".")] }
         , "./test/home-manager" { overrideInputs = [("oc", ".")] }
         , "./test/standalone" { overrideInputs = [("oc", ".")] }
         ]

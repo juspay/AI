@@ -6,8 +6,8 @@ One-click [OpenCode](https://opencode.ai/) for Juspay.
 > This flake is for **Juspay employees only**. It provides pre-configured OpenCode with Juspay's internal LLM API.
 
 <figure>
-<img width="1320" height="1098" alt="OpenCode running in the terminal with Juspay's LLM" src="https://github.com/user-attachments/assets/8a79ff2d-24c6-4142-a012-46687ab8bdeb" />
-<figcaption>OpenCode running in the terminal with Juspay's LLM</figcaption>
+<img alt="OpenCode demo: variant selector, oneclick, and hello world prompt" src="doc/demo/demo.gif" />
+<figcaption>OpenCode running in the terminal with Juspay's LLM (<code>just demo</code> to regenerate)</figcaption>
 </figure>
 
 ## Prerequisites
