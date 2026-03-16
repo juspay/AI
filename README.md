@@ -1,70 +1,55 @@
-# OpenCode Nix
+# OpenCode for Juspay
 
-One-click OpenCode for Juspay.
+Pre-configured [OpenCode](https://opencode.ai/docs/) with Juspay's internal LLM API and [Nix skills](https://github.com/juspay/skills) (nix-flake, nix-haskell).
 
 > [!IMPORTANT]
-> This flake is for **Juspay employees only**. It provides pre-configured OpenCode with Juspay's internal LLM API.
+> For **Juspay employees only**.
 
 <img width="1320" height="1098" alt="image" src="https://github.com/user-attachments/assets/8a79ff2d-24c6-4142-a012-46687ab8bdeb" />
-
 
 ## Quick Start
 
 > [!NOTE]
-> `JUSPAY_API_KEY` is required and can be created at https://grid.ai.juspay.net/dashboard (requires VPN).
+> `JUSPAY_API_KEY` is required. Create one at https://grid.ai.juspay.net/dashboard (requires VPN).
 
-### One-click
+### One-click (recommended)
 
-Config and skills embedded in package. Skills from [juspay/skills](https://github.com/juspay/skills) (nix-flake, nix-haskell) are bundled automatically:
+Everything bundled — config, models, and [skills](https://opencode.ai/docs/skills/). Nothing written to your home directory:
 
 ```bash
 export JUSPAY_API_KEY=your-api-key
 nix run github:juspay/oc#oneclick
 ```
 
-### Default
+### Standalone
 
-Auto-creates `~/.config/opencode/opencode.json` on first run. Edit this file to customize:
+Same config, but copies it to `~/.config/opencode/opencode.json` on first run so you can edit it:
 
 ```bash
 export JUSPAY_API_KEY=your-api-key
 nix run github:juspay/oc
 ```
 
-### With home-manager
+### home-manager
 
-Basic setup (no skills):
+Add the flake input and import the module. `with-skills` includes [juspay/skills](https://github.com/juspay/skills); use `default` if you don't want them.
 
 ```nix
 {
   inputs.oc.url = "github:juspay/oc";
-  
+
   outputs = { inputs, ... }: {
     homeConfigurations.yourhost = inputs.home-manager.lib.homeManagerConfiguration {
       pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
       modules = [
-        inputs.oc.homeModules.default
-        {
-          programs.opencode.package = inputs.oc.packages.x86_64-linux.default;
-        }
+        inputs.oc.homeModules.with-skills  # or .default (no skills)
       ];
     };
   };
 }
 ```
 
-With skills from [juspay/skills](https://github.com/juspay/skills):
-
-```nix
-modules = [
-  inputs.oc.homeModules.with-skills
-  {
-    programs.opencode.package = inputs.oc.packages.x86_64-linux.default;
-  }
-];
-```
-
-To update opencode to the latest version (the flake.lock is auto-updated daily):
+Update to latest (flake.lock is auto-updated daily):
 
 ```bash
 nix flake update oc
@@ -74,17 +59,16 @@ nix flake update oc
 
 ### Web UI
 
-OpenCode can run as a web application in your browser:
-
 ```bash
 nix run github:juspay/oc -- web
 ```
 
-This starts a local server and opens OpenCode in your default browser. Sessions are shared between the web UI and CLI, so you can switch between them seamlessly. You can also specify a port or make it accessible on your network with `--port 4096 --hostname 0.0.0.0`.
+Starts a local server and opens OpenCode in your browser. Sessions are shared between web and CLI. Add `--port 4096 --hostname 0.0.0.0` to expose on your network.
 
-See the [OpenCode Web docs](https://opencode.ai/docs/web/) for more.
+See [OpenCode Web docs](https://opencode.ai/docs/web/).
 
 ## Related
 
 - [OpenCode Documentation](https://opencode.ai/docs/)
+- [juspay/skills](https://github.com/juspay/skills) — Nix skills for OpenCode
 - [llm-agents.nix](https://github.com/numtide/llm-agents.nix)
