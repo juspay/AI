@@ -13,6 +13,7 @@
         [ "."
         , "./doc/demo" { overrideInputs = [("oc", ".")] }
         , "./test/home-manager" { overrideInputs = [("oc", ".")] }
+        , "./test/home-manager-with-skills" { overrideInputs = [("oc", ".")] }
         , "./test/standalone" { overrideInputs = [("oc", ".")] }
         ]
     , signoff.enable = True

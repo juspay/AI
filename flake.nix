@@ -10,10 +10,14 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
-    skills.url = "github:juspay/skills";
+    nix-agent-wire.url = "github:srid/nix-agent-wire";
+    skills = {
+      url = "github:juspay/skills";
+      flake = false;
+    };
   };
 
-  outputs = inputs@{ self, flake-parts, llm-agents, nixpkgs, skills, ... }:
+  outputs = inputs@{ self, flake-parts, llm-agents, nixpkgs, nix-agent-wire, skills, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
 
@@ -54,8 +58,9 @@
         with-skills = { ... }: {
           imports = [
             self.homeModules.default
-            skills.homeModules.opencode
+            nix-agent-wire.homeModules.opencode
           ];
+          programs.opencode.autoWire.dirs = [ skills ];
         };
       };
     };
