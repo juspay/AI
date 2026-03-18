@@ -1,8 +1,7 @@
 let
   juspayProvider = import ./default.nix;
-  baseSettings = import ../settings-base.nix;
 in
-baseSettings // {
+{
   model = "litellm/glm-latest";
   agent = {
     explore = {
@@ -10,7 +9,16 @@ baseSettings // {
       model = "litellm/open-fast";
     };
   };
+  autoupdate = true;
   provider = {
     litellm = juspayProvider;
   };
+  mcp = {
+    deepwiki = {
+      type = "remote";
+      url = "https://mcp.deepwiki.com/mcp";
+      enabled = true;
+    };
+  };
+  plugin = [ ];
 }

@@ -46,7 +46,7 @@ This flake's `flake.lock` (specifically the [llm-agents.nix](https://github.com/
 > [!NOTE]
 > If you installed Nix via [nixone](https://juspay.github.io/nixone/), home-manager is already configured at `~/.config/home-manager`. Otherwise, see [nixos-unified-template](https://github.com/juspay/nixos-unified-template) for getting started with home-manager.
 
-Basic setup (no skills):
+With Juspay provider (`JUSPAY_API_KEY` must be set):
 
 ```nix
 {
@@ -56,7 +56,7 @@ Basic setup (no skills):
     homeConfigurations.yourhost = inputs.home-manager.lib.homeManagerConfiguration {
       pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
       modules = [
-        inputs.oc.homeModules.default
+        inputs.oc.homeModules.opencode-juspay
         {
           programs.opencode.package = inputs.oc.packages.x86_64-linux.opencode;
         }
@@ -66,18 +66,16 @@ Basic setup (no skills):
 }
 ```
 
-With skills:
+Without Juspay (bring your own provider, e.g. Claude Max):
 
 ```nix
 modules = [
-  inputs.oc.homeModules.with-skills
+  inputs.oc.homeModules.opencode
   {
     programs.opencode.package = inputs.oc.packages.x86_64-linux.opencode;
   }
 ];
 ```
-
-The `JUSPAY_API_KEY` environment variable must be set when running OpenCode.
 
 To update opencode to the latest version:
 

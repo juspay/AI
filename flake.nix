@@ -42,7 +42,11 @@
           };
           opencode-oneclick = pkgs.callPackage ./coding-agents/opencode/packages/oneclick.nix {
             configFile = pkgs.callPackage ./coding-agents/opencode/packages/config.nix {
-              settings = import ./coding-agents/opencode/settings-base.nix;
+              settings = {
+                autoupdate = true;
+                mcp.deepwiki = { type = "remote"; url = "https://mcp.deepwiki.com/mcp"; enabled = true; };
+                plugin = [ ];
+              };
             };
             skillsSrc = self + "/.agents";
           };
@@ -58,21 +62,17 @@
       };
 
       flake.homeModules = {
-        default = import ./coding-agents/opencode/modules;
-        with-skills = { ... }: {
+        opencode = { ... }: {
           imports = [
-            self.homeModules.default
+            (import ./coding-agents/opencode/home)
             nix-agent-wire.homeModules.opencode
           ];
-          programs.opencode.autoWire.dirs = [ (self + "/.agents") ];
         };
-        base = import ./coding-agents/opencode/modules/base.nix;
-        base-with-skills = { ... }: {
+        opencode-juspay = { ... }: {
           imports = [
-            self.homeModules.base
+            (import ./coding-agents/opencode/home/juspay.nix)
             nix-agent-wire.homeModules.opencode
           ];
-          programs.opencode.autoWire.dirs = [ (self + "/.agents") ];
         };
       };
     };
