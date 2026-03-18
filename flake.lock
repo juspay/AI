@@ -190,24 +190,7 @@
         "nixpkgs": [
           "llm-agents",
           "nixpkgs"
-        ],
-        "skills": "skills"
-      }
-    },
-    "skills": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1773786483,
-        "narHash": "sha256-nT9po9XMjJ2nazyGrz8jkj75KIS8VUbnNfAYL2YqjWY=",
-        "owner": "juspay",
-        "repo": "skills",
-        "rev": "c727a563bcd073303681aff53947e56159e6d548",
-        "type": "github"
-      },
-      "original": {
-        "owner": "juspay",
-        "repo": "skills",
-        "type": "github"
+        ]
       }
     },
     "systems": {

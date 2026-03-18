@@ -1,5 +1,5 @@
 {
-  description = "One-click OpenCode for Juspay";
+  description = "One-click coding agents for Juspay";
 
   nixConfig = {
     extra-substituters = "https://cache.nixos.asia/oss";
@@ -11,13 +11,9 @@
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
     nix-agent-wire.url = "github:srid/nix-agent-wire";
-    skills = {
-      url = "github:juspay/skills";
-      flake = false;
-    };
   };
 
-  outputs = inputs@{ self, flake-parts, llm-agents, nixpkgs, nix-agent-wire, skills, ... }:
+  outputs = inputs@{ self, flake-parts, llm-agents, nixpkgs, nix-agent-wire, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
 
@@ -33,15 +29,15 @@
         };
 
         packages = {
-          default = pkgs.callPackage ./opencode/packages/default.nix {
+          default = pkgs.callPackage ./coding-agents/opencode/packages/default.nix {
             opencode-init = self'.packages.init;
             opencode-oneclick = self'.packages.oneclick;
           };
           opencode = pkgs.opencode;
-          init = pkgs.callPackage ./opencode/packages/init.nix { configFile = pkgs.callPackage ./opencode/packages/config.nix { }; };
-          oneclick = pkgs.callPackage ./opencode/packages/oneclick.nix {
-            configFile = pkgs.callPackage ./opencode/packages/config.nix { };
-            skillsSrc = inputs.skills;
+          init = pkgs.callPackage ./coding-agents/opencode/packages/init.nix { configFile = pkgs.callPackage ./coding-agents/opencode/packages/config.nix { }; };
+          oneclick = pkgs.callPackage ./coding-agents/opencode/packages/oneclick.nix {
+            configFile = pkgs.callPackage ./coding-agents/opencode/packages/config.nix { };
+            skillsSrc = self + "/.agents";
           };
         };
 
@@ -54,13 +50,13 @@
       };
 
       flake.homeModules = {
-        default = import ./opencode/modules;
+        default = import ./coding-agents/opencode/modules;
         with-skills = { ... }: {
           imports = [
             self.homeModules.default
             nix-agent-wire.homeModules.opencode
           ];
-          programs.opencode.autoWire.dirs = [ skills ];
+          programs.opencode.autoWire.dirs = [ (self + "/.agents") ];
         };
       };
     };

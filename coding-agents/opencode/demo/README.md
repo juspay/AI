@@ -11,7 +11,7 @@ export JUSPAY_API_KEY=your-key
 just demo
 ```
 
-This runs `vhs demo.tape` and outputs `demo.gif`, which is linked from the main [README](../../README.md).
+This runs `vhs demo.tape` and outputs `demo.gif`, which is linked from the main [README](../../../README.md).
 
 ## How it works
 

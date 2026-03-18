@@ -5,16 +5,16 @@
     isMain = ctx.branch == "main"
   in
   pipeline
-    { build.systems = 
+    { build.systems =
         [ "x86_64-linux"
         , "aarch64-darwin"
         ]
     , build.flakes =
         [ "."
-        , "./doc/demo" { overrideInputs = [("oc", ".")] }
-        , "./test/home-manager" { overrideInputs = [("oc", ".")] }
-        , "./test/home-manager-with-skills" { overrideInputs = [("oc", ".")] }
-        , "./test/standalone" { overrideInputs = [("oc", ".")] }
+        , "./coding-agents/opencode/demo" { overrideInputs = [("oc", ".")] }
+        , "./coding-agents/opencode/test/home-manager" { overrideInputs = [("oc", ".")] }
+        , "./coding-agents/opencode/test/home-manager-with-skills" { overrideInputs = [("oc", ".")] }
+        , "./coding-agents/opencode/test/standalone" { overrideInputs = [("oc", ".")] }
         ]
     , signoff.enable = True
     , cache.url = if

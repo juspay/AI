@@ -2,6 +2,6 @@
 {
   programs.opencode = {
     enable = true;
-    settings = import ./juspay/settings.nix;
+    settings = import ../juspay/settings.nix;
   };
 }
