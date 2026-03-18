@@ -1,4 +1,4 @@
-{ pkgs, settings ? import ../juspay/settings.nix }:
+{ pkgs, settings ? (import ../settings // import ../settings/juspay.nix) }:
 let
   jsonFormat = pkgs.formats.json { };
 in
