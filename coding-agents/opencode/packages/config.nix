@@ -1,6 +1,6 @@
 { pkgs }:
 let
-  juspaySettings = import ../../../juspay/settings.nix;
+  juspaySettings = import ../juspay/settings.nix;
   jsonFormat = pkgs.formats.json { };
 in
 jsonFormat.generate "opencode.json" ({
