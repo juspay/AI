@@ -4,5 +4,5 @@ default:
 
 # Record the demo screencast (requires JUSPAY_API_KEY)
 demo:
-    nix run ./doc/demo --override-input oc .
-    mv demo.gif doc/demo/
+    nix run ./coding-agents/opencode/demo --override-input oc .
+    mv demo.gif coding-agents/opencode/demo/

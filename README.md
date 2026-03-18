@@ -1,19 +1,19 @@
-# OpenCode Nix
+# oc
 
-One-click [OpenCode](https://opencode.ai/) for Juspay.
+One-click coding agents for Juspay.
 
 > [!IMPORTANT]
-> This flake is for **Juspay employees only**. It provides pre-configured OpenCode with Juspay's internal LLM API.
+> This flake is for **Juspay employees only**. It provides pre-configured coding agents with Juspay's internal LLM API.
 
 <figure>
-<img alt="OpenCode demo: variant selector, oneclick, and hello world prompt" src="doc/demo/demo.gif" />
+<img alt="OpenCode demo: variant selector, oneclick, and hello world prompt" src="coding-agents/opencode/demo/demo.gif" />
 <figcaption>OpenCode running in the terminal with Juspay's LLM (<code>just demo</code> to regenerate)</figcaption>
 </figure>
 
 ## Prerequisites
 
 - **Nix** — Install via [nixone](https://juspay.github.io/nixone/), which also sets up [home-manager](https://github.com/juspay/nixos-unified-template) in `~/.config/home-manager`. New to Nix? See the [Nix First Steps](https://nixos.asia/en/nix-first) tutorial.
-- **`JUSPAY_API_KEY`** — Create one at [grid.ai.juspay.net/dashboard](https://grid.ai.juspay.net/dashboard) (requires VPN to create, but **not** to use OpenCode afterwards)
+- **`JUSPAY_API_KEY`** — Create one at [grid.ai.juspay.net/dashboard](https://grid.ai.juspay.net/dashboard) (requires VPN to create, but **not** to use afterwards)
 
 ## Quick Start
 
@@ -28,7 +28,7 @@ Or run a specific variant directly:
 
 | Variant | Command | Description |
 |---|---|---|
-| `oneclick` | `nix run github:juspay/oc#oneclick` | Ready to go with Juspay config and [skills](https://opencode.ai/docs/skills/) bundled from [juspay/skills](https://github.com/juspay/skills) |
+| `oneclick` | `nix run github:juspay/oc#oneclick` | Ready to go with Juspay config and [skills](.agents/skills/) bundled |
 | `init` | `nix run github:juspay/oc#init` | Creates editable Juspay config at `~/.config/opencode/opencode.json` ([customize](https://opencode.ai/docs/config/)) |
 | `opencode` | `nix run github:juspay/oc#opencode` | Plain OpenCode, no Juspay config |
 
@@ -48,7 +48,7 @@ Basic setup (no skills):
 ```nix
 {
   inputs.oc.url = "github:juspay/oc";
-  
+
   outputs = { inputs, ... }: {
     homeConfigurations.yourhost = inputs.home-manager.lib.homeManagerConfiguration {
       pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
@@ -63,7 +63,7 @@ Basic setup (no skills):
 }
 ```
 
-With skills from [juspay/skills](https://github.com/juspay/skills):
+With skills:
 
 ```nix
 modules = [
@@ -96,9 +96,17 @@ This starts a local server and opens OpenCode in your default browser. Sessions 
 
 See the [OpenCode Web docs](https://opencode.ai/docs/web/) for more.
 
+## Repo Structure
+
+```
+├── .agents/                  # nix-agent-wire autoWire layout (skills, commands, etc.)
+├── juspay/                   # shared Juspay LLM config (provider, models)
+├── coding-agents/
+│   └── opencode/             # OpenCode agent (packages, modules, test, demo)
+```
+
 ## Related
 
 - [OpenCode Documentation](https://opencode.ai/docs/) — Full docs on usage, configuration, and providers
 - [OpenCode GitHub](https://github.com/anomalyco/opencode) — The upstream OpenCode project
 - [llm-agents.nix](https://github.com/numtide/llm-agents.nix) — The upstream Nix packaging that this flake builds on
-- [juspay/skills](https://github.com/juspay/skills) — Juspay's AI skills
