@@ -5,10 +5,11 @@ Never rewrite history: no rebase, no force push, no amending pushed commits. Alw
 When making changes to this flake, quickly verify the build works:
 
 ```bash
-nix run . -- --version
+nix run .#opencode -- --version
+nix run .#claude-code -- --version
 ```
 
-This should print the opencode version.
+These should print the respective agent versions.
 
 To run CI locally (including the home-manager example test):
 

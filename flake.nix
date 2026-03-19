@@ -23,14 +23,17 @@
           config.allowUnfree = true;
           overlays = [
             llm-agents.overlays.default
-            # Expose opencode directly for callPackage to auto-fill the argument
-            (final: prev: { opencode = prev.llm-agents.opencode; })
+            # Expose packages directly for callPackage to auto-fill the argument
+            (final: prev: {
+              opencode = prev.llm-agents.opencode;
+              claude-code = prev.llm-agents.claude-code;
+            })
           ];
         };
 
         packages = {
           default = pkgs.callPackage ./coding-agents/opencode/packages/default.nix {
-            inherit (self'.packages) opencode-juspay-editable opencode-juspay-oneclick opencode-oneclick;
+            inherit (self'.packages) opencode-juspay-editable opencode-juspay-oneclick opencode-oneclick claude-code claude-code-oneclick;
           };
           opencode = pkgs.opencode;
           opencode-juspay-editable = pkgs.callPackage ./coding-agents/opencode/packages/juspay-editable.nix {
@@ -46,6 +49,10 @@
             };
             skillsSrc = self + "/.agents";
           };
+          claude-code = pkgs.claude-code;
+          claude-code-oneclick = pkgs.callPackage ./coding-agents/claude-code/packages/oneclick.nix {
+            skillsSrc = self + "/.agents";
+          };
         };
 
         apps = {
@@ -54,6 +61,8 @@
           opencode-juspay-editable.program = lib.getExe' self'.packages.opencode-juspay-editable "opencode";
           opencode-juspay-oneclick.program = lib.getExe' self'.packages.opencode-juspay-oneclick "opencode";
           opencode-oneclick.program = lib.getExe' self'.packages.opencode-oneclick "opencode";
+          claude-code.program = lib.getExe' self'.packages.claude-code "claude";
+          claude-code-oneclick.program = lib.getExe' self'.packages.claude-code-oneclick "claude";
         };
       };
 
@@ -69,6 +78,12 @@
             (import ./coding-agents/opencode/home)
             (import ./coding-agents/opencode/home/juspay.nix)
             nix-agent-wire.homeModules.opencode
+          ];
+        };
+        claude-code = { ... }: {
+          imports = [
+            (import ./coding-agents/claude-code/home)
+            nix-agent-wire.homeModules.claude-code
           ];
         };
       };
