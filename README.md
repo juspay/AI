@@ -16,7 +16,11 @@ Currently supports **[OpenCode](https://opencode.ai/)** only. [Claude Code](http
 
 ## Quick Start
 
-Run a variant directly:
+```bash
+nix run github:juspay/AI
+```
+
+This launches an interactive selector. Or run a specific variant directly:
 
 | Variant | Command | Description |
 |---|---|---|
@@ -25,13 +29,7 @@ Run a variant directly:
 | `opencode-juspay-editable` | `nix run github:juspay/AI#opencode-juspay-editable` | Creates editable Juspay config at `~/.config/opencode/opencode.json` ([customize](https://opencode.ai/docs/config/)) |
 | `opencode` | `nix run github:juspay/AI#opencode` | Plain OpenCode, no config |
 
-The `JUSPAY_API_KEY` environment variable must be set when running the `opencode-juspay-editable*` variants.
-
-Or run the interactive selector:
-
-```bash
-nix run github:juspay/AI
-```
+The `JUSPAY_API_KEY` environment variable must be set when running the `opencode-juspay-*` variants.
 
 ### Daily Updates
 
