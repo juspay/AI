@@ -33,7 +33,7 @@ The `JUSPAY_API_KEY` environment variable must be set when running the `opencode
 
 ### Daily Updates
 
-This flake's `flake.lock` (specifically the [llm-agents.nix](https://github.com/numtide/llm-agents.nix) input) is **auto-updated daily** via CI, so you always get the latest OpenCode release. If pinning via `flake.lock` in your own flake, run `nix flake update oc` to pull the latest.
+This flake's `flake.lock` (specifically the [llm-agents.nix](https://github.com/numtide/llm-agents.nix) input) is **auto-updated daily** via CI, so you always get the latest OpenCode release. If pinning via `flake.lock` in your own flake, run `nix flake update AI` to pull the latest.
 
 ### With home-manager
 
@@ -44,15 +44,15 @@ With Juspay provider (`JUSPAY_API_KEY` must be set):
 
 ```nix
 {
-  inputs.oc.url = "github:juspay/AI";
+  inputs.AI.url = "github:juspay/AI";
 
   outputs = { inputs, ... }: {
     homeConfigurations.yourhost = inputs.home-manager.lib.homeManagerConfiguration {
       pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
       modules = [
-        inputs.oc.homeModules.opencode-juspay-editable
+        inputs.AI.homeModules.opencode-juspay-editable
         {
-          programs.opencode.package = inputs.oc.packages.x86_64-linux.opencode;
+          programs.opencode.package = inputs.AI.packages.x86_64-linux.opencode;
         }
       ];
     };
@@ -64,9 +64,9 @@ Without Juspay (bring your own provider, e.g. Claude Max):
 
 ```nix
 modules = [
-  inputs.oc.homeModules.opencode
+  inputs.AI.homeModules.opencode
   {
-    programs.opencode.package = inputs.oc.packages.x86_64-linux.opencode;
+    programs.opencode.package = inputs.AI.packages.x86_64-linux.opencode;
   }
 ];
 ```
@@ -74,7 +74,7 @@ modules = [
 To update opencode to the latest version:
 
 ```bash
-nix flake update oc
+nix flake update AI
 ```
 
 ## Tips
