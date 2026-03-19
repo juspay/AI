@@ -15,6 +15,8 @@
         , "./coding-agents/opencode/test/home-manager-juspay" { overrideInputs = [("oc", ".")] }
         , "./coding-agents/opencode/test/home-manager-base" { overrideInputs = [("oc", ".")] }
         , "./coding-agents/opencode/test/standalone" { overrideInputs = [("oc", ".")] }
+        , "./coding-agents/claude-code/test/home-manager-base" { overrideInputs = [("oc", ".")] }
+        , "./coding-agents/claude-code/test/standalone" { overrideInputs = [("oc", ".")] }
         ]
     , signoff.enable = True
     , cache.url = if
