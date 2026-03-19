@@ -1,6 +1,6 @@
 { oc, home-manager }:
 {
-  name = "opencode-with-skills";
+  name = "opencode-base-module";
 
   nodes.machine = { pkgs, ... }: {
     imports = [ home-manager.nixosModules.home-manager ];
@@ -14,7 +14,7 @@
       useGlobalPkgs = true;
       useUserPackages = true;
       users.testuser = {
-        imports = [ oc.homeModules.with-skills ];
+        imports = [ oc.homeModules.opencode ];
 
         programs.opencode.package = oc.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
         programs.bash.enable = true;
@@ -46,26 +46,34 @@
     print(f"Config file contents: {config_file}")
 
     config = json.loads(config_file)
-    if "litellm" in config.get("provider", {}):
-        print("✅ Juspay provider configuration found in config")
+
+    # Verify NO Juspay provider
+    if "litellm" not in config.get("provider", {}):
+        print("✅ No Juspay provider in config (as expected)")
     else:
-        raise Exception("Juspay provider configuration not found")
+        raise Exception("Juspay provider found in base module")
+
+    # Verify base settings
+    if config.get("autoupdate") == True:
+        print("✅ autoupdate enabled")
+    else:
+        raise Exception("autoupdate not found in config")
 
     # Verify skills are wired via nix-agent-wire
     skills_dir = "/home/testuser/.config/opencode/skill"
-    
+
     machine.succeed(f"test -f {skills_dir}/nix-flake/SKILL.md")
     print("✅ nix-flake skill exists")
-    
+
     machine.succeed(f"test -f {skills_dir}/nix-haskell/SKILL.md")
     print("✅ nix-haskell skill exists")
-    
+
     machine.succeed(f"test -f {skills_dir}/nix-ci/SKILL.md")
     print("✅ nix-ci skill exists")
-    
+
     machine.succeed(f"test -f {skills_dir}/vhs/SKILL.md")
     print("✅ vhs skill exists")
 
-    print("✅ All with-skills module tests passed")
+    print("✅ All base module tests passed")
   '';
 }

@@ -1,8 +1,7 @@
-{ pkgs }:
+{ pkgs, settings ? (import ../settings // import ../settings/juspay.nix) }:
 let
-  juspaySettings = import ../juspay/settings.nix;
   jsonFormat = pkgs.formats.json { };
 in
 jsonFormat.generate "opencode.json" ({
   "$schema" = "https://opencode.ai/config.json";
-} // juspaySettings)
+} // settings)

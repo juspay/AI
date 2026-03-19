@@ -12,8 +12,9 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       checks.${system} = {
-        init = pkgs.testers.runNixOSTest (import ./test.nix { inherit oc; });
-        oneclick = pkgs.testers.runNixOSTest (import ./test-oneclick.nix { inherit oc; });
+        opencode-juspay-editable = pkgs.testers.runNixOSTest (import ./test-juspay-editable.nix { inherit oc; });
+        opencode-juspay-oneclick = pkgs.testers.runNixOSTest (import ./test-juspay-oneclick.nix { inherit oc; });
+        opencode-oneclick = pkgs.testers.runNixOSTest (import ./test-oneclick.nix { inherit oc; });
       };
     };
 }

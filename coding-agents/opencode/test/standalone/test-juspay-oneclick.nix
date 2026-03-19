@@ -1,6 +1,6 @@
 { oc }:
 {
-  name = "opencode-oneclick-no-juspay";
+  name = "opencode-oneclick";
 
   nodes.machine = { pkgs, ... }: {
     users.users.testuser = {
@@ -9,8 +9,10 @@
     };
 
     environment.systemPackages = [
-      oc.packages.${pkgs.stdenv.hostPlatform.system}.opencode-oneclick
+      oc.packages.${pkgs.stdenv.hostPlatform.system}.opencode-juspay-oneclick
     ];
+
+    environment.variables.JUSPAY_API_KEY = "test-api-key";
 
     system.stateVersion = "24.05";
   };
@@ -24,19 +26,24 @@
 
     machine.succeed("loginctl enable-linger testuser")
 
-    # Test version (verifies opencode runs without JUSPAY_API_KEY)
+    # Test version (verifies opencode runs with bundled config)
     version = machine.succeed("su - testuser -c 'opencode --version'")
     print(f"OpenCode version: {version}")
 
-    # Verify OPENCODE_CONFIG_DIR is set in wrapper
+    # Verify skills are bundled by checking OPENCODE_CONFIG_DIR in wrapper
+    # The wrapper sets OPENCODE_CONFIG_DIR which should contain skills/
     opencode_bin = machine.succeed("which opencode").strip()
+    print(f"OpenCode binary: {opencode_bin}")
+
+    # Check the wrapper script contains OPENCODE_CONFIG_DIR
     wrapper_content = machine.succeed(f"cat {opencode_bin}")
     if "OPENCODE_CONFIG_DIR" in wrapper_content:
         print("✅ OPENCODE_CONFIG_DIR is set in wrapper")
     else:
         raise Exception("OPENCODE_CONFIG_DIR not found in wrapper")
 
-    # Extract config dir path
+    # Verify skills directory exists in the nix store path
+    # Extract the config dir path from wrapper
     match = re.search(r'OPENCODE_CONFIG_DIR[= ]([^\s\n]+)', wrapper_content)
     if match:
         config_dir = match.group(1).strip("'\"")
@@ -47,33 +54,29 @@
         machine.succeed(f"test -d {skills_path}")
         print(f"✅ Skills directory exists: {skills_path}")
 
+        # Check nix-flake skill
         machine.succeed(f"test -f {skills_path}/nix-flake/SKILL.md")
         print("✅ nix-flake skill exists")
 
+        # Check nix-haskell skill
         machine.succeed(f"test -f {skills_path}/nix-haskell/SKILL.md")
         print("✅ nix-haskell skill exists")
-
-        # Verify config file exists
-        config_path = f"{config_dir}/opencode.json"
-        machine.succeed(f"test -f {config_path}")
-        print("✅ Config file exists in config dir")
-
-        # Verify NO Juspay provider in config
-        config_file = machine.succeed(f"cat {config_path}")
-        config = json.loads(config_file)
-        if "litellm" not in config.get("provider", {}):
-            print("✅ No Juspay provider in config (as expected)")
-        else:
-            raise Exception("Juspay provider found in non-Juspay variant")
-
-        # Verify base settings present
-        if config.get("autoupdate") == True:
-            print("✅ autoupdate enabled")
-        else:
-            raise Exception("autoupdate not found in config")
     else:
         raise Exception("Could not find OPENCODE_CONFIG_DIR path in wrapper")
 
-    print("✅ All opencode-oneclick (no Juspay) tests passed")
+    # Verify config file exists
+    config_path = f"{config_dir}/opencode.json"
+    machine.succeed(f"test -f {config_path}")
+    print("✅ Config file exists in config dir")
+
+    # Verify config contents
+    config_file = machine.succeed(f"cat {config_path}")
+    config = json.loads(config_file)
+    if "litellm" in config.get("provider", {}):
+        print("✅ Juspay provider configuration found")
+    else:
+        raise Exception("Juspay provider configuration not found")
+
+    print("✅ All oneclick package tests passed")
   '';
 }

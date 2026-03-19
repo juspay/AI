@@ -1,63 +1,58 @@
 # AI
 
-AI agent configuration and one-click coding agents for Juspay.
-
-> [!IMPORTANT]
-> This flake is for **Juspay employees only**. It provides shared AI agent configuration (skills, commands, MCP servers) and pre-configured coding agents with Juspay's internal LLM API.
+Shared AI agent configuration and one-click coding agents.
 
 Currently supports **[OpenCode](https://opencode.ai/)** only. [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and other agents are coming soon.
 
 <figure>
-<img alt="OpenCode demo: variant selector, oneclick, and hello world prompt" src="coding-agents/opencode/demo/demo.gif" />
+<img alt="OpenCode demo: variant selector, oneclick, and hello world prompt" src="demo/demo.gif" />
 <figcaption>OpenCode running in the terminal with Juspay's LLM (<code>just demo</code> to regenerate)</figcaption>
 </figure>
 
 ## Prerequisites
 
-- **Nix** — Install via [nixone](https://juspay.github.io/nixone/), which also sets up [home-manager](https://github.com/juspay/nixos-unified-template) in `~/.config/home-manager`. New to Nix? See the [Nix First Steps](https://nixos.asia/en/nix-first) tutorial.
-- **`JUSPAY_API_KEY`** — Create one at [grid.ai.juspay.net/dashboard](https://grid.ai.juspay.net/dashboard) (requires VPN to create, but **not** to use afterwards)
+- **Nix** — Install via [the Nix installer](https://nixos.asia/en/install), which also sets up [home-manager](https://github.com/juspay/nixos-unified-template) in `~/.config/home-manager`. New to Nix? See the [Nix First Steps](https://nixos.asia/en/nix-first) tutorial.
+- **`JUSPAY_API_KEY`** *(Juspay employees only)* — Create one at [grid.ai.juspay.net/dashboard](https://grid.ai.juspay.net/dashboard) (requires VPN to create, but **not** to use afterwards). Not needed for non-Juspay variants.
 
 ## Quick Start
 
-Run the interactive selector which lets you choose a variant (we recommend `oneclick`):
-
 ```bash
-export JUSPAY_API_KEY=your-api-key
-nix run github:juspay/oc
+nix run github:juspay/AI
 ```
 
-Or run a specific variant directly:
+This launches an interactive selector. Or run a specific variant directly:
 
 | Variant | Command | Description |
 |---|---|---|
-| `oneclick` | `nix run github:juspay/oc#oneclick` | Ready to go with Juspay config and [skills](.agents/skills/) bundled |
-| `init` | `nix run github:juspay/oc#init` | Creates editable Juspay config at `~/.config/opencode/opencode.json` ([customize](https://opencode.ai/docs/config/)) |
-| `opencode` | `nix run github:juspay/oc#opencode` | Plain OpenCode, no Juspay config |
+| `opencode-juspay-oneclick` | `nix run github:juspay/AI#opencode-juspay-oneclick` | Juspay config and [`.agents/`](.agents/) bundled |
+| `opencode-oneclick` | `nix run github:juspay/AI#opencode-oneclick` | [`.agents/`](.agents/) bundled, bring your own provider (e.g. Claude Max) |
+| `opencode-juspay-editable` | `nix run github:juspay/AI#opencode-juspay-editable` | Creates editable Juspay config at `~/.config/opencode/opencode.json` ([customize](https://opencode.ai/docs/config/)) |
+| `opencode` | `nix run github:juspay/AI#opencode` | Plain OpenCode, no config |
 
-The `JUSPAY_API_KEY` environment variable must be set when running the `oneclick` or `init` variants.
+The `JUSPAY_API_KEY` environment variable must be set when running the `opencode-juspay-*` variants.
 
 ### Daily Updates
 
-This flake's `flake.lock` (specifically the [llm-agents.nix](https://github.com/numtide/llm-agents.nix) input) is **auto-updated daily** via CI, so you always get the latest OpenCode release. If pinning via `flake.lock` in your own flake, run `nix flake update oc` to pull the latest.
+This flake's `flake.lock` (specifically the [llm-agents.nix](https://github.com/numtide/llm-agents.nix) input) is **auto-updated daily** via CI, so you always get the latest OpenCode release. If pinning via `flake.lock` in your own flake, run `nix flake update AI` to pull the latest.
 
 ### With home-manager
 
 > [!NOTE]
-> If you installed Nix via [nixone](https://juspay.github.io/nixone/), home-manager is already configured at `~/.config/home-manager`. Otherwise, see [nixos-unified-template](https://github.com/juspay/nixos-unified-template) for getting started with home-manager.
+> If you installed Nix via [the Nix installer](https://nixos.asia/en/install), home-manager is already configured at `~/.config/home-manager`. Otherwise, see [nixos-unified-template](https://github.com/juspay/nixos-unified-template) for getting started with home-manager.
 
-Basic setup (no skills):
+With Juspay provider (`JUSPAY_API_KEY` must be set):
 
 ```nix
 {
-  inputs.oc.url = "github:juspay/oc";
+  inputs.AI.url = "github:juspay/AI";
 
   outputs = { inputs, ... }: {
     homeConfigurations.yourhost = inputs.home-manager.lib.homeManagerConfiguration {
       pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
       modules = [
-        inputs.oc.homeModules.default
+        inputs.AI.homeModules.opencode-juspay
         {
-          programs.opencode.package = inputs.oc.packages.x86_64-linux.opencode;
+          programs.opencode.package = inputs.AI.packages.x86_64-linux.opencode;
         }
       ];
     };
@@ -65,23 +60,21 @@ Basic setup (no skills):
 }
 ```
 
-With skills:
+Without Juspay (bring your own provider, e.g. Claude Max):
 
 ```nix
 modules = [
-  inputs.oc.homeModules.with-skills
+  inputs.AI.homeModules.opencode
   {
-    programs.opencode.package = inputs.oc.packages.x86_64-linux.opencode;
+    programs.opencode.package = inputs.AI.packages.x86_64-linux.opencode;
   }
 ];
 ```
 
-The `JUSPAY_API_KEY` environment variable must be set when running OpenCode.
-
 To update opencode to the latest version:
 
 ```bash
-nix flake update oc
+nix flake update AI
 ```
 
 ## Tips
@@ -91,7 +84,7 @@ nix flake update oc
 OpenCode can run as a web application in your browser:
 
 ```bash
-nix run github:juspay/oc#opencode -- web
+nix run github:juspay/AI#opencode -- web
 ```
 
 This starts a local server and opens OpenCode in your default browser. Sessions are shared between the web UI and CLI, so you can switch between them seamlessly. You can also specify a port or make it accessible on your network with `--port 4096 --hostname 127.0.0.1`.
@@ -110,7 +103,8 @@ This configuration is wired into agents via `autoWire.dirs` (home-manager) or bu
 ├── .agents/                  # Shared agent configuration (skills, commands, MCP, etc.)
 │   └── skills/               # AI skills
 ├── coding-agents/
-│   └── opencode/             # OpenCode one-click setup (packages, modules, test, demo)
+│   └── opencode/             # OpenCode packages, home modules, settings, tests
+├── demo/                     # Demo screencast infrastructure
 ```
 
 ## Related

@@ -11,7 +11,7 @@ export JUSPAY_API_KEY=your-key
 just demo
 ```
 
-This runs `vhs demo.tape` and outputs `demo.gif`, which is linked from the main [README](../../../README.md).
+This runs `vhs demo.tape` and outputs `demo.gif`, which is linked from the main [README](../README.md).
 
 ## How it works
 
@@ -37,7 +37,7 @@ Wait+Screen /ALFABRAVO/
 
 ## Editing
 
-Modify [`demo.tape`](demo.tape) to change the recording. Key commands:
+Modify the agent-specific `.tape` file (e.g., [`coding-agents/opencode/demo.tape`](../coding-agents/opencode/demo.tape)) to change the recording. Key commands:
 
 | Command | Purpose |
 |---|---|

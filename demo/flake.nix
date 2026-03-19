@@ -1,5 +1,5 @@
 {
-  description = "OpenCode demo screencast generator";
+  description = "Demo screencast generator";
 
   inputs = {
     oc.url = "github:juspay/oc";
@@ -18,9 +18,10 @@
           name = "record-demo";
           runtimeInputs = [ pkgs.vhs pkgs.bc ];
           text = ''
-            echo "Recording demo..."
-            vhs "${./.}/demo.tape"
-            echo "Done! Output: demo.gif"
+            tape="''${1:?Usage: record-demo <tape-file>}"
+            echo "Recording demo from $tape..."
+            vhs "$tape"
+            echo "Done!"
           '';
         });
       };
