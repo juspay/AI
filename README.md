@@ -50,7 +50,7 @@ With Juspay provider (`JUSPAY_API_KEY` must be set):
     homeConfigurations.yourhost = inputs.home-manager.lib.homeManagerConfiguration {
       pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
       modules = [
-        inputs.AI.homeModules.opencode-juspay-editable
+        inputs.AI.homeModules.opencode-juspay
         {
           programs.opencode.package = inputs.AI.packages.x86_64-linux.opencode;
         }

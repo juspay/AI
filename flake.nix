@@ -64,7 +64,7 @@
             nix-agent-wire.homeModules.opencode
           ];
         };
-        opencode-juspay-editable = { ... }: {
+        opencode-juspay = { ... }: {
           imports = [
             (import ./coding-agents/opencode/home)
             (import ./coding-agents/opencode/home/juspay.nix)
