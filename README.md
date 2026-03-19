@@ -1,9 +1,6 @@
 # AI
 
-AI agent configuration and one-click coding agents for Juspay.
-
-> [!IMPORTANT]
-> This flake is for **Juspay employees only**. It provides shared AI agent configuration (skills, commands, MCP servers) and pre-configured coding agents with Juspay's internal LLM API.
+Shared AI agent configuration and one-click coding agents.
 
 Currently supports **[OpenCode](https://opencode.ai/)** only. [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and other agents are coming soon.
 
@@ -15,27 +12,26 @@ Currently supports **[OpenCode](https://opencode.ai/)** only. [Claude Code](http
 ## Prerequisites
 
 - **Nix** — Install via [nixone](https://juspay.github.io/nixone/), which also sets up [home-manager](https://github.com/juspay/nixos-unified-template) in `~/.config/home-manager`. New to Nix? See the [Nix First Steps](https://nixos.asia/en/nix-first) tutorial.
-- **`JUSPAY_API_KEY`** — Create one at [grid.ai.juspay.net/dashboard](https://grid.ai.juspay.net/dashboard) (requires VPN to create, but **not** to use afterwards)
+- **`JUSPAY_API_KEY`** *(Juspay employees only)* — Create one at [grid.ai.juspay.net/dashboard](https://grid.ai.juspay.net/dashboard) (requires VPN to create, but **not** to use afterwards). Not needed for non-Juspay variants.
 
 ## Quick Start
 
-Run the interactive selector which lets you choose a variant (we recommend `oneclick`):
-
-```bash
-export JUSPAY_API_KEY=your-api-key
-nix run github:juspay/oc
-```
-
-Or run a specific variant directly:
+Run a variant directly:
 
 | Variant | Command | Description |
 |---|---|---|
-| `opencode-juspay-oneclick` | `nix run github:juspay/oc#opencode-juspay-oneclick` | Juspay config and [`.agents/`](.agents/) bundled |
-| `opencode-oneclick` | `nix run github:juspay/oc#opencode-oneclick` | [`.agents/`](.agents/) bundled, bring your own provider (e.g. Claude Max) |
-| `opencode-juspay` | `nix run github:juspay/oc#opencode-juspay` | Creates editable Juspay config at `~/.config/opencode/opencode.json` ([customize](https://opencode.ai/docs/config/)) |
-| `opencode` | `nix run github:juspay/oc#opencode` | Plain OpenCode, no config |
+| `opencode-juspay-oneclick` | `nix run github:juspay/AI#opencode-juspay-oneclick` | Juspay config and [`.agents/`](.agents/) bundled |
+| `opencode-oneclick` | `nix run github:juspay/AI#opencode-oneclick` | [`.agents/`](.agents/) bundled, bring your own provider (e.g. Claude Max) |
+| `opencode-juspay-editable` | `nix run github:juspay/AI#opencode-juspay-editable` | Creates editable Juspay config at `~/.config/opencode/opencode.json` ([customize](https://opencode.ai/docs/config/)) |
+| `opencode` | `nix run github:juspay/AI#opencode` | Plain OpenCode, no config |
 
-The `JUSPAY_API_KEY` environment variable must be set when running the `opencode-juspay*` variants.
+The `JUSPAY_API_KEY` environment variable must be set when running the `opencode-juspay-editable*` variants.
+
+Or run the interactive selector:
+
+```bash
+nix run github:juspay/AI
+```
 
 ### Daily Updates
 
@@ -50,13 +46,13 @@ With Juspay provider (`JUSPAY_API_KEY` must be set):
 
 ```nix
 {
-  inputs.oc.url = "github:juspay/oc";
+  inputs.oc.url = "github:juspay/AI";
 
   outputs = { inputs, ... }: {
     homeConfigurations.yourhost = inputs.home-manager.lib.homeManagerConfiguration {
       pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
       modules = [
-        inputs.oc.homeModules.opencode-juspay
+        inputs.oc.homeModules.opencode-juspay-editable
         {
           programs.opencode.package = inputs.oc.packages.x86_64-linux.opencode;
         }
@@ -90,7 +86,7 @@ nix flake update oc
 OpenCode can run as a web application in your browser:
 
 ```bash
-nix run github:juspay/oc#opencode -- web
+nix run github:juspay/AI#opencode -- web
 ```
 
 This starts a local server and opens OpenCode in your default browser. Sessions are shared between the web UI and CLI, so you can switch between them seamlessly. You can also specify a port or make it accessible on your network with `--port 4096 --hostname 127.0.0.1`.
@@ -109,7 +105,8 @@ This configuration is wired into agents via `autoWire.dirs` (home-manager) or bu
 ├── .agents/                  # Shared agent configuration (skills, commands, MCP, etc.)
 │   └── skills/               # AI skills
 ├── coding-agents/
-│   └── opencode/             # OpenCode one-click setup (packages, modules, test, demo)
+│   └── opencode/             # OpenCode packages, home modules, settings, tests
+├── demo/                     # Demo screencast infrastructure
 ```
 
 ## Related

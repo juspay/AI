@@ -14,7 +14,7 @@
       useGlobalPkgs = true;
       useUserPackages = true;
       users.testuser = {
-        imports = [ oc.homeModules.opencode-juspay ];
+        imports = [ oc.homeModules.opencode-juspay-editable ];
 
         programs.opencode.package = oc.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
         programs.bash.enable = true;

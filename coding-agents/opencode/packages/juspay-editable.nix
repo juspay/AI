@@ -2,7 +2,7 @@
 let
   ocLib = import ../lib.nix;
 in
-pkgs.runCommand "opencode-juspay" {
+pkgs.runCommand "opencode-juspay-editable" {
   nativeBuildInputs = [ pkgs.makeWrapper ];
   meta.mainProgram = "opencode";
 } ''

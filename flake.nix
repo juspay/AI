@@ -30,10 +30,10 @@
 
         packages = {
           default = pkgs.callPackage ./coding-agents/opencode/packages/default.nix {
-            inherit (self'.packages) opencode-juspay opencode-juspay-oneclick opencode-oneclick;
+            inherit (self'.packages) opencode-juspay-editable opencode-juspay-oneclick opencode-oneclick;
           };
           opencode = pkgs.opencode;
-          opencode-juspay = pkgs.callPackage ./coding-agents/opencode/packages/juspay.nix {
+          opencode-juspay-editable = pkgs.callPackage ./coding-agents/opencode/packages/juspay-editable.nix {
             configFile = pkgs.callPackage ./coding-agents/opencode/packages/config.nix { };
           };
           opencode-juspay-oneclick = pkgs.callPackage ./coding-agents/opencode/packages/juspay-oneclick.nix {
@@ -51,7 +51,7 @@
         apps = {
           default.program = lib.getExe' self'.packages.default "opencode";
           opencode.program = lib.getExe' self'.packages.opencode "opencode";
-          opencode-juspay.program = lib.getExe' self'.packages.opencode-juspay "opencode";
+          opencode-juspay-editable.program = lib.getExe' self'.packages.opencode-juspay-editable "opencode";
           opencode-juspay-oneclick.program = lib.getExe' self'.packages.opencode-juspay-oneclick "opencode";
           opencode-oneclick.program = lib.getExe' self'.packages.opencode-oneclick "opencode";
         };
@@ -64,7 +64,7 @@
             nix-agent-wire.homeModules.opencode
           ];
         };
-        opencode-juspay = { ... }: {
+        opencode-juspay-editable = { ... }: {
           imports = [
             (import ./coding-agents/opencode/home)
             (import ./coding-agents/opencode/home/juspay.nix)
