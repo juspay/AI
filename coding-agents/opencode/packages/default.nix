@@ -10,10 +10,10 @@ pkgs.writeShellApplication {
       "opencode                  — Plain OpenCode, no config")
 
     case "$choice" in
-      opencode-juspay-oneclick*)  exec ${lib.getExe' opencode-juspay-oneclick "opencode"} "$@" ;;
-      opencode-oneclick*)         exec ${lib.getExe' opencode-oneclick "opencode"} "$@" ;;
-      opencode-juspay-editable*)  exec ${lib.getExe' opencode-juspay-editable "opencode"} "$@" ;;
-      opencode*)                  exec ${lib.getExe' opencode "opencode"} "$@" ;;
+      opencode-juspay-oneclick*)  exec ${lib.getExe opencode-juspay-oneclick} "$@" ;;
+      opencode-oneclick*)         exec ${lib.getExe opencode-oneclick} "$@" ;;
+      opencode-juspay-editable*)  exec ${lib.getExe opencode-juspay-editable} "$@" ;;
+      opencode*)                  exec ${lib.getExe opencode} "$@" ;;
       *)                          echo "No selection made."; exit 1 ;;
     esac
   '';

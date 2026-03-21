@@ -20,7 +20,8 @@
       perSystem = { self', lib, pkgs, system, ... }:
         let
           opencode = pkgs.llm-agents.opencode;
-          callOc = path: args: pkgs.callPackage (./coding-agents/opencode/packages + "/${path}") args;
+          # callPackageWith auto-injects opencode into package functions that accept it
+          callOc = path: lib.callPackageWith (pkgs // { inherit opencode; }) (./coding-agents/opencode/packages + "/${path}");
           juspayConfigFile = callOc "config.nix" { };
           baseConfigFile = callOc "config.nix" { settings = import ./coding-agents/opencode/settings; };
           skillsSrc = self + "/.agents";
@@ -34,27 +35,23 @@
 
           packages = {
             default = callOc "default.nix" {
-              inherit opencode;
               inherit (self'.packages) opencode-juspay-editable opencode-juspay-oneclick opencode-oneclick;
             };
             inherit opencode;
             opencode-juspay-editable = callOc "juspay-editable.nix" {
-              inherit opencode;
               configFile = juspayConfigFile;
             };
             opencode-juspay-oneclick = callOc "juspay-oneclick.nix" {
-              inherit opencode;
               configFile = juspayConfigFile;
               inherit skillsSrc;
             };
             opencode-oneclick = callOc "oneclick.nix" {
-              inherit opencode;
               configFile = baseConfigFile;
               inherit skillsSrc;
             };
           };
 
-          apps = lib.mapAttrs (_: pkg: { program = lib.getExe' pkg "opencode"; }) self'.packages;
+          apps = lib.mapAttrs (_: pkg: { program = lib.getExe pkg; }) self'.packages;
         };
 
       flake.homeModules =
@@ -65,8 +62,8 @@
           ];
         in
         {
-          opencode = { ... }: { imports = baseImports; };
-          opencode-juspay = { ... }: {
+          opencode = { imports = baseImports; };
+          opencode-juspay = {
             imports = baseImports ++ [
               ./coding-agents/opencode/home/juspay.nix
             ];
