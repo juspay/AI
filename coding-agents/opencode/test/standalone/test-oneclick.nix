@@ -1,28 +1,21 @@
 { oc }:
+let common = import ./common.nix;
+in
 {
   name = "opencode-oneclick-no-juspay";
 
   nodes.machine = { pkgs, ... }: {
-    users.users.testuser = {
-      isNormalUser = true;
-      uid = 1000;
-    };
-
+    imports = [ common.baseNode ];
     environment.systemPackages = [
       oc.packages.${pkgs.stdenv.hostPlatform.system}.opencode-oneclick
     ];
-
-    system.stateVersion = "24.05";
   };
 
   testScript = ''
     import json
     import re
 
-    machine.start()
-    machine.wait_for_unit("multi-user.target")
-
-    machine.succeed("loginctl enable-linger testuser")
+    ${common.testPreamble}
 
     # Test version (verifies opencode runs without JUSPAY_API_KEY)
     version = machine.succeed("su - testuser -c 'opencode --version'")

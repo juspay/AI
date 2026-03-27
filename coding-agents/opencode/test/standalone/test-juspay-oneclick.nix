@@ -1,37 +1,28 @@
 { oc }:
+let common = import ./common.nix;
+in
 {
   name = "opencode-oneclick";
 
   nodes.machine = { pkgs, ... }: {
-    users.users.testuser = {
-      isNormalUser = true;
-      uid = 1000;
-    };
-
+    imports = [ common.baseNode ];
     environment.systemPackages = [
       oc.packages.${pkgs.stdenv.hostPlatform.system}.opencode-juspay-oneclick
     ];
-
     environment.variables.JUSPAY_API_KEY = "test-api-key";
-
-    system.stateVersion = "24.05";
   };
 
   testScript = ''
     import json
     import re
 
-    machine.start()
-    machine.wait_for_unit("multi-user.target")
-
-    machine.succeed("loginctl enable-linger testuser")
+    ${common.testPreamble}
 
     # Test version (verifies opencode runs with bundled config)
     version = machine.succeed("su - testuser -c 'opencode --version'")
     print(f"OpenCode version: {version}")
 
     # Verify skills are bundled by checking OPENCODE_CONFIG_DIR in wrapper
-    # The wrapper sets OPENCODE_CONFIG_DIR which should contain skills/
     opencode_bin = machine.succeed("which opencode").strip()
     print(f"OpenCode binary: {opencode_bin}")
 
@@ -42,7 +33,6 @@
     else:
         raise Exception("OPENCODE_CONFIG_DIR not found in wrapper")
 
-    # Verify skills directory exists in the nix store path
     # Extract the config dir path from wrapper
     match = re.search(r'OPENCODE_CONFIG_DIR[= ]([^\s\n]+)', wrapper_content)
     if match:
@@ -54,11 +44,9 @@
         machine.succeed(f"test -d {skills_path}")
         print(f"✅ Skills directory exists: {skills_path}")
 
-        # Check nix-flake skill
         machine.succeed(f"test -f {skills_path}/nix-flake/SKILL.md")
         print("✅ nix-flake skill exists")
 
-        # Check nix-haskell skill
         machine.succeed(f"test -f {skills_path}/nix-haskell/SKILL.md")
         print("✅ nix-haskell skill exists")
     else:

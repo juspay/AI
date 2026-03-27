@@ -10,11 +10,13 @@
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
-    in {
+      mkTest = file: pkgs.testers.runNixOSTest (import file { inherit oc; });
+    in
+    {
       checks.${system} = {
-        opencode-juspay-editable = pkgs.testers.runNixOSTest (import ./test-juspay-editable.nix { inherit oc; });
-        opencode-juspay-oneclick = pkgs.testers.runNixOSTest (import ./test-juspay-oneclick.nix { inherit oc; });
-        opencode-oneclick = pkgs.testers.runNixOSTest (import ./test-oneclick.nix { inherit oc; });
+        opencode-juspay-editable = mkTest ./test-juspay-editable.nix;
+        opencode-juspay-oneclick = mkTest ./test-juspay-oneclick.nix;
+        opencode-oneclick = mkTest ./test-oneclick.nix;
       };
     };
 }

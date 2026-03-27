@@ -1,16 +1,12 @@
 { pkgs, lib, opencode, configFile, skillsSrc }:
 let
-  configDir = pkgs.runCommand "opencode-config-dir" { } ''
-    mkdir -p $out
-    ln -s ${configFile} $out/opencode.json
-    ln -s ${skillsSrc}/skills $out/skills
-  '';
+  ocLib = import ./lib.nix;
+  configDir = ocLib.mkConfigDir { inherit pkgs configFile skillsSrc; };
 in
-pkgs.runCommand "opencode-oneclick" {
-  nativeBuildInputs = [ pkgs.makeWrapper ];
-  meta.mainProgram = "opencode";
-} ''
-  mkdir -p $out/bin
-  makeWrapper ${lib.getExe opencode} $out/bin/opencode \
-    --set OPENCODE_CONFIG_DIR ${configDir}
-''
+pkgs.writeShellApplication {
+  name = "opencode";
+  text = ''
+    export OPENCODE_CONFIG_DIR=${configDir}
+    exec ${lib.getExe opencode} "$@"
+  '';
+}
