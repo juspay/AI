@@ -5,11 +5,7 @@
     isMain = ctx.branch == "main"
   in
   pipeline
-    { build.systems =
-        [ "x86_64-linux"
-        , "aarch64-darwin"
-        ]
-    , build.flakes =
+    { build.flakes =
         [ "."
         , "./demo" { overrideInputs = [("oc", ".")] }
         , "./coding-agents/opencode/test/home-manager" { overrideInputs = [("oc", ".")] }
