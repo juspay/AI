@@ -1,5 +1,5 @@
 {
-  description = "OpenCode home-manager test";
+  description = "OpenCode home-manager module tests";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -12,9 +12,12 @@
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
-    in {
+      mkTest = file: pkgs.testers.runNixOSTest (import file { inherit oc home-manager; });
+    in
+    {
       checks.${system} = {
-        opencode-home-manager-test = pkgs.testers.runNixOSTest (import ./test.nix { inherit oc home-manager; });
+        opencode-base = mkTest ./test-base.nix;
+        opencode-juspay = mkTest ./test-juspay.nix;
       };
     };
 }

@@ -1,27 +1,20 @@
 { oc }:
+let common = import ./common.nix;
+in
 {
   name = "opencode-init";
 
   nodes.machine = { pkgs, ... }: {
-    users.users.testuser = {
-      isNormalUser = true;
-      uid = 1000;
-    };
-
+    imports = [ common.baseNode ];
     environment.systemPackages = [
       oc.packages.${pkgs.stdenv.hostPlatform.system}.opencode-juspay-editable
     ];
-
-    system.stateVersion = "24.05";
   };
 
   testScript = ''
     import json
 
-    machine.start()
-    machine.wait_for_unit("multi-user.target")
-
-    machine.succeed("loginctl enable-linger testuser")
+    ${common.testPreamble}
 
     config_path = "/home/testuser/.config/opencode/opencode.json"
 

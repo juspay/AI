@@ -1,42 +1,18 @@
 { oc, home-manager }:
+let common = import ./common.nix { inherit home-manager oc; };
+in
 {
   name = "opencode-base-module";
 
   nodes.machine = { pkgs, ... }: {
-    imports = [ home-manager.nixosModules.home-manager ];
-
-    users.users.testuser = {
-      isNormalUser = true;
-      uid = 1000;
-    };
-
-    home-manager = {
-      useGlobalPkgs = true;
-      useUserPackages = true;
-      users.testuser = {
-        imports = [ oc.homeModules.opencode ];
-
-        programs.opencode.package = oc.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
-        programs.bash.enable = true;
-
-        home = {
-          username = "testuser";
-          homeDirectory = "/home/testuser";
-          stateVersion = "24.05";
-        };
-      };
-    };
-
-    system.stateVersion = "24.05";
+    imports = [ common.baseNode ];
+    home-manager.users.testuser.imports = [ oc.homeModules.opencode ];
   };
 
   testScript = ''
     import json
 
-    machine.start()
-    machine.wait_for_unit("multi-user.target")
-
-    machine.succeed("loginctl enable-linger testuser")
+    ${common.testPreamble}
 
     version = machine.succeed("su - testuser -c 'opencode --version'")
     print(f"OpenCode version: {version}")

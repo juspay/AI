@@ -10,13 +10,14 @@
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
-      lib = pkgs.lib;
-    in {
+      demoDeps = [ pkgs.vhs pkgs.bc ];
+    in
+    {
       apps.${system}.default = {
         type = "app";
-        program = lib.getExe (pkgs.writeShellApplication {
+        program = pkgs.lib.getExe (pkgs.writeShellApplication {
           name = "record-demo";
-          runtimeInputs = [ pkgs.vhs pkgs.bc ];
+          runtimeInputs = demoDeps;
           text = ''
             tape="''${1:?Usage: record-demo <tape-file>}"
             echo "Recording demo from $tape..."
@@ -27,7 +28,7 @@
       };
 
       devShells.${system}.default = pkgs.mkShell {
-        packages = [ pkgs.vhs pkgs.bc ];
+        packages = demoDeps;
       };
     };
 }
