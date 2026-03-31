@@ -14,5 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: nixbuild/nix-quick-install-action@v34
-      - run: nix profile install github:juspay/vira
-      - run: vira ci -b
+      - run: nix profile install github:juspay/vira --accept-flake-config
+      - name: Configure Attic cache
+        if: github.ref == 'refs/heads/main'
+        run: nix shell nixpkgs#attic-client -c attic login cache-nixos-asia https://cache.nixos.asia "$ATTIC_TOKEN"
+        env:
+          ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
+      - run: vira ci
+        env:
+          GH_TOKEN: ${{ github.token }}
