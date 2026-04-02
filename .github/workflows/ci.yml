@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, update_flake_lock_action]
   pull_request:
 
 jobs:
