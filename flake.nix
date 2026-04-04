@@ -10,10 +10,11 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
-    nix-agent-wire.url = "github:srid/nix-agent-wire";
+    skills.url = "github:juspay/skills";
+    skills.flake = false;
   };
 
-  outputs = inputs@{ self, flake-parts, llm-agents, nixpkgs, nix-agent-wire, ... }:
+  outputs = inputs@{ self, flake-parts, llm-agents, nixpkgs, skills, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
 
@@ -24,7 +25,7 @@
           callOc = path: lib.callPackageWith (pkgs // { inherit opencode; }) (./coding-agents/opencode/packages + "/${path}");
           juspayConfigFile = callOc "config.nix" { };
           baseConfigFile = callOc "config.nix" { settings = import ./coding-agents/opencode/settings; };
-          skillsSrc = self + "/.agents";
+          skillsSrc = skills;
         in
         {
           _module.args.pkgs = import nixpkgs {
@@ -54,20 +55,5 @@
           apps = lib.mapAttrs (_: pkg: { program = lib.getExe pkg; }) self'.packages;
         };
 
-      flake.homeModules =
-        let
-          baseImports = [
-            ./coding-agents/opencode/home
-            nix-agent-wire.homeModules.opencode
-          ];
-        in
-        {
-          opencode = { imports = baseImports; };
-          opencode-juspay = {
-            imports = baseImports ++ [
-              ./coding-agents/opencode/home/juspay.nix
-            ];
-          };
-        };
     };
 }
