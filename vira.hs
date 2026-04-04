@@ -12,7 +12,6 @@
     , build.flakes =
         [ "."
         , "./demo" { overrideInputs = [("oc", ".")] }
-        , "./coding-agents/opencode/test/home-manager" { overrideInputs = [("oc", ".")] }
         , "./coding-agents/opencode/test/standalone" { overrideInputs = [("oc", ".")] }
         ]
     , signoff.enable = True

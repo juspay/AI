@@ -4,8 +4,8 @@ pkgs.writeShellApplication {
   runtimeInputs = [ pkgs.gum ];
   text = ''
     choice=$(gum choose --header "Choose OpenCode variant:" \
-      "opencode-juspay-oneclick  — Juspay config and .agents/ bundled" \
-      "opencode-oneclick         — .agents/ bundled, bring your own provider" \
+      "opencode-juspay-oneclick  — Juspay config and skills bundled" \
+      "opencode-oneclick         — Skills bundled, bring your own provider" \
       "opencode-juspay-editable  — Creates editable Juspay config at ~/.config/opencode/" \
       "opencode                  — Plain OpenCode, no config")
 

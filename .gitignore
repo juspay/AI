@@ -4,3 +4,7 @@ result-*
 
 # Ignore automatically generated direnv output
 .direnv
+
+# Claude Code
+.worktrees/
+.execute-results.json
