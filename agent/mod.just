@@ -1,3 +1,6 @@
+# Run recipes from project root, not agents/
+set working-directory := '..'
+
 apm_cmd := "uvx --from 'git+https://github.com/microsoft/apm' apm"
 ai_agent := env('AI_AGENT', 'claude')
 # Extract program name (e.g. "claude" from "claude --dangerously-skip-permissions")
