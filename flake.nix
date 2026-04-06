@@ -21,8 +21,10 @@
       perSystem = { self', lib, pkgs, system, ... }:
         let
           opencode = pkgs.llm-agents.opencode;
+          claude-code = pkgs.llm-agents.claude-code;
           # callPackageWith auto-injects opencode into package functions that accept it
           callOc = path: lib.callPackageWith (pkgs // { inherit opencode; }) (./coding-agents/opencode/packages + "/${path}");
+          callCc = path: lib.callPackageWith (pkgs // { inherit claude-code; }) (./coding-agents/claude-code + "/${path}");
           juspayConfigFile = callOc "config.nix" { };
           baseConfigFile = callOc "config.nix" { settings = import ./coding-agents/opencode/settings; };
           skillsSrc = skills;
@@ -36,7 +38,7 @@
 
           packages = {
             default = callOc "default.nix" {
-              inherit (self'.packages) opencode-juspay-editable opencode-juspay-oneclick opencode-oneclick;
+              inherit (self'.packages) opencode-juspay-editable opencode-juspay-oneclick opencode-oneclick claude-code-juspay-oneclick;
             };
             inherit opencode;
             opencode-juspay-editable = callOc "juspay-editable.nix" {
@@ -48,6 +50,9 @@
             };
             opencode-oneclick = callOc "oneclick.nix" {
               configFile = baseConfigFile;
+              inherit skillsSrc;
+            };
+            claude-code-juspay-oneclick = callCc "juspay-oneclick.nix" {
               inherit skillsSrc;
             };
           };
