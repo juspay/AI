@@ -49,9 +49,28 @@ This starts a local server and opens OpenCode in your default browser. Sessions 
 
 See the [OpenCode Web docs](https://opencode.ai/docs/web/) for more.
 
+## Coding Agent Setup
+
+This repo uses [APM](https://microsoft.github.io/apm/) (via [srid/agency](https://github.com/srid/agency)) for coding agent configuration. To set up your coding agent environment:
+
+```bash
+just agent       # deploy APM primitives + launch agent (default: claude)
+just agent::apm  # deploy only, don't launch
+```
+
+Override the agent with `AI_AGENT`:
+
+```bash
+AI_AGENT=opencode just agent
+AI_AGENT='claude --dangerously-skip-permissions' just agent
+```
+
+Project instructions live in `agent/.apm/instructions/` and deploy to `.claude/rules/` (or equivalent) via `apm install`.
+
 ## Repo Structure
 
 ```
+├── agent/                    # APM local package (project instructions, mod.just)
 ├── coding-agents/
 │   └── opencode/             # OpenCode packages, settings, tests
 ├── demo/                     # Demo screencast infrastructure

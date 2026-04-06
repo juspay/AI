@@ -1,0 +1,10 @@
+name: AI
+version: 1.0.0
+description: Nix flake for AI coding agents
+author: Sridhar Ratnakumar
+dependencies:
+  apm:
+  - srid/agency#master
+  - ./agent
+  mcp: []
+scripts: {}
