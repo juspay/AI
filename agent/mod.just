@@ -10,6 +10,10 @@ apm_target := replace_regex(ai_agent, ' .*', '')
 apm:
     {{ apm_cmd }} install -t {{ apm_target }}
 
+# Update APM dependencies to latest
+update:
+    {{ apm_cmd }} install --update -t {{ apm_target }}
+
 # Install APM config and launch coding agent (AI_AGENT overrides default)
 [default]
 run *args: apm
