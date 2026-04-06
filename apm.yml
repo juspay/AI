@@ -5,6 +5,6 @@ author: Sridhar Ratnakumar
 dependencies:
   apm:
   - srid/agency#master
-  - ./local
+  - ./agent
   mcp: []
 scripts: {}

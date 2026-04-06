@@ -1,23 +1,17 @@
 lockfile_version: '1'
-generated_at: '2026-04-06T19:55:37.137726+00:00'
+generated_at: '2026-04-06T20:07:50.663855+00:00'
 apm_version: 0.8.10
 dependencies:
-- repo_url: _local/local
+- repo_url: _local/agent
   package_type: apm_package
-  deployed_files:
-  - .claude/rules/project.md
   source: local
-  local_path: ./local
+  local_path: ./agent
 - repo_url: srid/agency
   host: github.com
   resolved_commit: 5b761a616e3aa4bee20b859a2947f3f0f8f792b1
   resolved_ref: master
   package_type: apm_package
   deployed_files:
-  - .claude/commands/do.md
-  - .claude/commands/talk.md
-  - .claude/hooks/agency/scripts/execute-stop-guard.sh
-  - .claude/rules/apm-sources.md
   - .claude/skills/code-police
   - .claude/skills/github-pr
   - .claude/skills/hickey
