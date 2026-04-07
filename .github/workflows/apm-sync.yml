@@ -11,13 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: astral-sh/setup-uv@v6
 
       - name: Regenerate vendored APM output
         run: |
           rm -f .claude/settings.json
-          nix run github:numtide/llm-agents.nix#apm -- install --force -t claude
-          nix run github:numtide/llm-agents.nix#apm -- install --force -t opencode
+          uvx --from git+https://github.com/microsoft/apm apm install --force -t claude
+          uvx --from git+https://github.com/microsoft/apm apm install --force -t opencode
 
       - name: Check for drift
         run: |
