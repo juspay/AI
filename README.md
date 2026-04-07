@@ -5,7 +5,7 @@ One-click coding agents with Juspay's LLM configuration.
 Currently supports **[OpenCode](https://opencode.ai/)** only. Skills are sourced from:
 
 - [juspay/skills](https://github.com/juspay/skills) — Shared AI agent skills
-- [anthropics/skills](https://github.com/anthropics/skills) — Anthropic's official skills
+- [anthropics/skills](https://github.com/anthropics/skills) — `frontend-design` skill
 - [srid/agency](https://github.com/srid/agency) — Near-autonomous workflow for coding agents
 
 <figure>
