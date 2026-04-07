@@ -2,7 +2,11 @@
 
 One-click coding agents with Juspay's LLM configuration.
 
-Currently supports **[OpenCode](https://opencode.ai/)** only. Skills are sourced from [juspay/skills](https://github.com/juspay/skills).
+Currently supports **[OpenCode](https://opencode.ai/)** only. Skills are sourced from:
+
+- [juspay/skills](https://github.com/juspay/skills) — Shared AI agent skills
+- [anthropics/skills](https://github.com/anthropics/skills) — Anthropic's official skills
+- [srid/agency](https://github.com/srid/agency) — Coding agent configuration & workflows
 
 <figure>
 <img alt="OpenCode demo: variant selector, oneclick, and hello world prompt" src="demo/demo.gif" />
@@ -77,7 +81,7 @@ AI_AGENT='claude --dangerously-skip-permissions' just agent
 ├── demo/                     # Demo screencast infrastructure
 ```
 
-Skills from [juspay/skills](https://github.com/juspay/skills) and [srid/agency](https://github.com/srid/agency) are vendored via APM into `.claude/` and `.opencode/`.
+Skills are vendored via APM into `.claude/` and `.opencode/` from the sources listed above.
 
 ## Related
 
