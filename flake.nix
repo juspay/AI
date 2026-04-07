@@ -10,11 +10,9 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
-    skills.url = "github:juspay/skills";
-    skills.flake = false;
   };
 
-  outputs = inputs@{ self, flake-parts, llm-agents, nixpkgs, skills, ... }:
+  outputs = inputs@{ self, flake-parts, llm-agents, nixpkgs, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
 
@@ -25,7 +23,8 @@
           callOc = path: lib.callPackageWith (pkgs // { inherit opencode; }) (./coding-agents/opencode/packages + "/${path}");
           juspayConfigFile = callOc "config.nix" { };
           baseConfigFile = callOc "config.nix" { settings = import ./coding-agents/opencode/settings; };
-          skillsSrc = skills;
+          # Vendored by apm — see .opencode/skills/ and apm.yml
+          skillsDir = ./.opencode/skills;
         in
         {
           _module.args.pkgs = import nixpkgs {
@@ -44,11 +43,11 @@
             };
             opencode-juspay-oneclick = callOc "juspay-oneclick.nix" {
               configFile = juspayConfigFile;
-              inherit skillsSrc;
+              inherit skillsDir;
             };
             opencode-oneclick = callOc "oneclick.nix" {
               configFile = baseConfigFile;
-              inherit skillsSrc;
+              inherit skillsDir;
             };
           };
 

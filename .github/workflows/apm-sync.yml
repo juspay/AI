@@ -18,8 +18,9 @@ jobs:
 
       - name: Regenerate vendored APM output from scratch
         run: |
-          rm -rf .claude/ .opencode/
+          rm -rf .claude/ .opencode/ apm.lock.yaml
           $APM install --force -t claude
+          rm -f apm.lock.yaml
           $APM install --force -t opencode
 
       - name: Check for drift

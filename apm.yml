@@ -8,5 +8,6 @@ author: Sridhar Ratnakumar
 dependencies:
   apm:
   - srid/agency#7fc84d15e9c48395d2c093c9d275939bf05738f6
+  - juspay/skills#dda471de09467bf5992d700772459276d2e64f7e
   mcp: []
 scripts: {}
