@@ -1,10 +1,10 @@
 lockfile_version: '1'
-generated_at: '2026-04-07T00:22:37.474778+00:00'
+generated_at: '2026-04-07T00:34:54.018231+00:00'
 apm_version: 0.8.10
 dependencies:
 - repo_url: srid/agency
   host: github.com
-  resolved_commit: fdcd6901c9c1c476a9dee9d3afc95b533286942b
+  resolved_commit: 7fc84d15e9c48395d2c093c9d275939bf05738f6
   resolved_ref: master
   package_type: apm_package
   deployed_files:
@@ -13,4 +13,4 @@ dependencies:
   - .opencode/skills/code-police
   - .opencode/skills/github-pr
   - .opencode/skills/hickey
-  content_hash: sha256:ea3ea7a0c80263561a765dff41e46f5bab4a2f80be42f6e37ebce104082adc77
+  content_hash: sha256:3b3dd5a41cf8a0e6967d3b7eb12f280a351c6e676b363f69988e73f8b199afae
