@@ -37,10 +37,10 @@ in
     fi
   '';
 
-  mkConfigDir = { pkgs, configFile, skillsSrc }:
+  mkConfigDir = { pkgs, configFile, skillsDir }:
     pkgs.runCommand "opencode-config-dir" { } ''
       mkdir -p $out
       ln -s ${configFile} $out/opencode.json
-      ln -s ${skillsSrc}/skills $out/skills
+      ln -s ${skillsDir} $out/skills
     '';
 }

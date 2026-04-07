@@ -7,53 +7,56 @@
   };
 
   inputs = {
-    flake-parts.url = "github:hercules-ci/flake-parts";
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
-    skills.url = "github:juspay/skills";
-    skills.flake = false;
   };
 
-  outputs = inputs@{ self, flake-parts, llm-agents, nixpkgs, skills, ... }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
+  outputs = { self, llm-agents, nixpkgs }:
+    let
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
-
-      perSystem = { self', lib, pkgs, system, ... }:
+      forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
+      pkgsFor = system: import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+        overlays = [ llm-agents.overlays.default ];
+      };
+    in
+    {
+      packages = forAllSystems (system:
         let
+          pkgs = pkgsFor system;
+          lib = pkgs.lib;
           opencode = pkgs.llm-agents.opencode;
-          # callPackageWith auto-injects opencode into package functions that accept it
           callOc = path: lib.callPackageWith (pkgs // { inherit opencode; }) (./coding-agents/opencode/packages + "/${path}");
           juspayConfigFile = callOc "config.nix" { };
           baseConfigFile = callOc "config.nix" { settings = import ./coding-agents/opencode/settings; };
-          skillsSrc = skills;
+          # Vendored by apm — see .opencode/skills/ and apm.yml
+          skillsDir = ./.opencode/skills;
         in
         {
-          _module.args.pkgs = import nixpkgs {
-            inherit system;
-            config.allowUnfree = true;
-            overlays = [ llm-agents.overlays.default ];
-          };
-
-          packages = {
-            default = callOc "default.nix" {
-              inherit (self'.packages) opencode-juspay-editable opencode-juspay-oneclick opencode-oneclick;
-            };
+          default = callOc "default.nix" {
             inherit opencode;
-            opencode-juspay-editable = callOc "juspay-editable.nix" {
-              configFile = juspayConfigFile;
-            };
-            opencode-juspay-oneclick = callOc "juspay-oneclick.nix" {
-              configFile = juspayConfigFile;
-              inherit skillsSrc;
-            };
-            opencode-oneclick = callOc "oneclick.nix" {
-              configFile = baseConfigFile;
-              inherit skillsSrc;
-            };
+            opencode-juspay-editable = self.packages.${system}.opencode-juspay-editable;
+            opencode-juspay-oneclick = self.packages.${system}.opencode-juspay-oneclick;
+            opencode-oneclick = self.packages.${system}.opencode-oneclick;
           };
+          inherit opencode;
+          opencode-juspay-editable = callOc "juspay-editable.nix" {
+            configFile = juspayConfigFile;
+          };
+          opencode-juspay-oneclick = callOc "juspay-oneclick.nix" {
+            configFile = juspayConfigFile;
+            inherit skillsDir;
+          };
+          opencode-oneclick = callOc "oneclick.nix" {
+            configFile = baseConfigFile;
+            inherit skillsDir;
+          };
+        }
+      );
 
-          apps = lib.mapAttrs (_: pkg: { program = lib.getExe pkg; }) self'.packages;
-        };
-
+      apps = forAllSystems (system:
+        nixpkgs.lib.mapAttrs (_: pkg: { program = nixpkgs.lib.getExe pkg; type = "app"; }) self.packages.${system}
+      );
     };
 }

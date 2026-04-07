@@ -77,7 +77,7 @@ AI_AGENT='claude --dangerously-skip-permissions' just agent
 ├── demo/                     # Demo screencast infrastructure
 ```
 
-Skills live in [juspay/skills](https://github.com/juspay/skills) and are pulled in as a flake input.
+Skills from [juspay/skills](https://github.com/juspay/skills) and [srid/agency](https://github.com/srid/agency) are vendored via APM into `.claude/` and `.opencode/`.
 
 ## Related
 
