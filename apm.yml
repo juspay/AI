@@ -4,6 +4,6 @@ description: Nix flake for AI coding agents
 author: Sridhar Ratnakumar
 dependencies:
   apm:
-  - srid/agency#master
+  - srid/agency#7fc84d15e9c48395d2c093c9d275939bf05738f6
   mcp: []
 scripts: {}
