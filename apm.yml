@@ -2,6 +2,9 @@ name: AI
 version: 1.0.0
 description: Nix flake for AI coding agents
 author: Sridhar Ratnakumar
+# Pin to commit hash — lock file is gitignored because it breaks with
+# multiple targets (https://github.com/microsoft/apm/issues/529).
+# To update: change the hash, then run `just agent::update`.
 dependencies:
   apm:
   - srid/agency#7fc84d15e9c48395d2c093c9d275939bf05738f6
