@@ -1,5 +1,5 @@
 lockfile_version: '1'
-generated_at: '2026-04-06T23:24:04.560175+00:00'
+generated_at: '2026-04-07T00:12:23.207703+00:00'
 apm_version: 0.8.10
 dependencies:
 - repo_url: _local/agent
