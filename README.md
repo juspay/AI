@@ -33,7 +33,7 @@ This launches an interactive selector. Or run a specific variant directly:
 | `opencode-juspay-editable` | `nix run github:juspay/AI#opencode-juspay-editable` | Creates editable Juspay config at `~/.config/opencode/opencode.json` ([customize](https://opencode.ai/docs/config/)) |
 | `opencode` | `nix run github:juspay/AI#opencode` | Plain OpenCode, no config |
 
-The `JUSPAY_API_KEY` environment variable must be set when running the `opencode-juspay-*` variants.
+The `opencode-juspay-*` variants need a `JUSPAY_API_KEY`. If the env var isn't set, the wrapper prompts for it interactively — handy on fresh VMs or containers. Export the var in your shell to skip the prompt on subsequent runs.
 
 ### Daily Updates
 
