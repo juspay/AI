@@ -1,6 +1,6 @@
 { pkgs, lib, opencode, configFile, skillsDir }:
 let
-  ocLib = import ./lib.nix;
+  ocLib = import ./lib.nix { inherit pkgs; };
   configDir = ocLib.mkConfigDir { inherit pkgs configFile skillsDir; };
 in
 pkgs.writeShellApplication {
