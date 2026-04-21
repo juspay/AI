@@ -7,7 +7,6 @@ author: Sridhar Ratnakumar
 # To update: change the hash, then run `just agent::update`.
 dependencies:
   apm:
-  - srid/agency#78a08188e3b9434c046da07f4c12282e2b88c170
   - juspay/skills#6e2df2d9ab3a4031e89598b50aa1074c3fd87748
   - anthropics/skills/skills/frontend-design#ca1e7dc13c0ab5e2dfaa6de71991cd951b8f1cf2
   mcp: []
