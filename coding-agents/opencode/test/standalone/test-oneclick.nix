@@ -14,6 +14,7 @@ in
   testScript = ''
     import json
     import re
+    import shlex
 
     ${common.testPreamble}
 
@@ -29,43 +30,44 @@ in
     else:
         raise Exception("OPENCODE_CONFIG_DIR not found in wrapper")
 
-    # Extract config dir path
-    match = re.search(r'OPENCODE_CONFIG_DIR[= ]([^\s\n]+)', wrapper_content)
-    if match:
-        config_dir = match.group(1).strip("'\"")
-        print(f"Config dir: {config_dir}")
+    # Extract the store paths linked into the runtime OPENCODE_CONFIG_DIR.
+    skills_match = re.search(r'ln -s (\S+) "\$OPENCODE_CONFIG_DIR/skills"', wrapper_content)
+    config_match = re.search(r'ln -s (\S+) "\$OPENCODE_CONFIG_DIR/opencode\.json"', wrapper_content)
+    if not skills_match or not config_match:
+        raise Exception("Could not find bundled config or skills path in wrapper")
 
-        # Check skills exist
-        skills_path = f"{config_dir}/skills"
-        machine.succeed(f"test -d {skills_path}")
-        print(f"✅ Skills directory exists: {skills_path}")
+    skills_path = skills_match.group(1)
+    config_path = config_match.group(1)
+    print(f"Skills path: {skills_path}")
+    print(f"Config path: {config_path}")
 
-        machine.succeed(f"test -f {skills_path}/nix-flake/SKILL.md")
-        print("✅ nix-flake skill exists")
+    # Check skills exist
+    machine.succeed(f"test -d {shlex.quote(skills_path)}")
+    print(f"✅ Skills directory exists: {skills_path}")
 
-        machine.succeed(f"test -f {skills_path}/nix-haskell/SKILL.md")
-        print("✅ nix-haskell skill exists")
+    machine.succeed(f"test -f {shlex.quote(skills_path)}/nix-flake/SKILL.md")
+    print("✅ nix-flake skill exists")
 
-        # Verify config file exists
-        config_path = f"{config_dir}/opencode.json"
-        machine.succeed(f"test -f {config_path}")
-        print("✅ Config file exists in config dir")
+    machine.succeed(f"test -f {shlex.quote(skills_path)}/nix-haskell/SKILL.md")
+    print("✅ nix-haskell skill exists")
 
-        # Verify NO Juspay provider in config
-        config_file = machine.succeed(f"cat {config_path}")
-        config = json.loads(config_file)
-        if "litellm" not in config.get("provider", {}):
-            print("✅ No Juspay provider in config (as expected)")
-        else:
-            raise Exception("Juspay provider found in non-Juspay variant")
+    # Verify config file exists
+    machine.succeed(f"test -f {shlex.quote(config_path)}")
+    print("✅ Config file exists in config dir")
 
-        # Verify base settings present
-        if config.get("autoupdate") == True:
-            print("✅ autoupdate enabled")
-        else:
-            raise Exception("autoupdate not found in config")
+    # Verify NO Juspay provider in config
+    config_file = machine.succeed(f"cat {shlex.quote(config_path)}")
+    config = json.loads(config_file)
+    if "litellm" not in config.get("provider", {}):
+        print("✅ No Juspay provider in config (as expected)")
     else:
-        raise Exception("Could not find OPENCODE_CONFIG_DIR path in wrapper")
+        raise Exception("Juspay provider found in non-Juspay variant")
+
+    # Verify base settings present
+    if config.get("autoupdate") == True:
+        print("✅ autoupdate enabled")
+    else:
+        raise Exception("autoupdate not found in config")
 
     print("✅ All opencode-oneclick (no Juspay) tests passed")
   '';

@@ -9,6 +9,7 @@ in
     environment.systemPackages = [
       oc.packages.${pkgs.stdenv.hostPlatform.system}.opencode-juspay-editable
     ];
+    environment.variables.JUSPAY_API_KEY = "test-api-key";
   };
 
   testScript = ''
