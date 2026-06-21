@@ -3,13 +3,16 @@ let
   # reasoningEffort (optional) marks the model as a reasoning model and is
   # forwarded as the OpenAI-compatible `reasoning_effort` request field —
   # @ai-sdk/openai-compatible maps the camelCase key to snake_case for us.
-  mkModel = name: { context, output, reasoningEffort ? null }:
+  # id (optional) sets the wire model id when the attr key differs from the
+  # gateway's model name — used to expose one gateway model at several
+  # reasoning-effort tiers.
+  mkModel = name: { context, output, reasoningEffort ? null, id ? null }:
     let
       base = {
         inherit name;
         modalities = { input = [ "text" "image" ]; output = [ "text" ]; };
         limit = { inherit context output; };
-      };
+      } // (if id == null then { } else { inherit id; });
     in
     if reasoningEffort == null then base
     else base // {
@@ -29,9 +32,15 @@ let
     gemini-3-pro-preview    = { context = 1048576; output = 65535; };
     gemini-3-flash-preview  = { context = 1048576; output = 65535; };
     minimax-m2              = { context = 202752;  output = 32000; };
-    # glm-latest is GLM-5.2, which supports graduated reasoning effort up to
-    # "max" (its top tier). Enable max thinking by default.
-    glm-latest              = { context = 202752;  output = 32000; reasoningEffort = "max"; };
+    # glm-latest is GLM-5.2. Its default reasoning is left untouched (no
+    # reasoning_effort sent — the gateway default, which is thinking-on). The
+    # effort tiers below are sibling picker entries that target the same gateway
+    # model via `id`; GLM-5.2 collapses low/medium into "high", so max / high /
+    # off are the only distinct levels.
+    glm-latest              = { context = 202752;  output = 32000; };
+    glm-max                 = { context = 202752;  output = 32000; reasoningEffort = "max";  id = "glm-latest"; };
+    glm-high                = { context = 202752;  output = 32000; reasoningEffort = "high"; id = "glm-latest"; };
+    glm-fast                = { context = 202752;  output = 32000; reasoningEffort = "none"; id = "glm-latest"; };
     kimi-latest             = { context = 262000;  output = 32000; };
   };
 in

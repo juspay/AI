@@ -52,21 +52,26 @@ This starts a local server and opens OpenCode in your default browser. Sessions 
 
 See the [OpenCode Web docs](https://opencode.ai/docs/web/) for more.
 
-### GLM thinking mode
+### GLM reasoning-effort tiers
 
-The default model, `glm-latest` (GLM-5.2), runs with **maximum reasoning effort**.
-OpenCode sends `reasoning_effort: "max"` — the top tier the gateway accepts for this
-model — on every request, and renders GLM's reasoning trace in the TUI before each
-answer.
+`glm-latest` (GLM-5.2) reasons by default. To trade thinking depth for speed, the
+model picker (`ctrl+x m`) exposes the same model at several reasoning-effort tiers —
+GLM-5.2 collapses low/medium into "high", so these are the only distinct levels:
+
+| Picker entry | `reasoning_effort` | Use it for |
+|---|---|---|
+| `glm-latest` | *(gateway default)* | the default — thinking on |
+| `glm-max`    | `max`  | deepest reasoning |
+| `glm-high`   | `high` | strong reasoning, faster |
+| `glm-fast`   | `none` | no thinking, fastest replies |
 
 <figure>
-<img alt="OpenCode driving GLM-5.2 through an extended reasoning trace at max effort" src="demo/glm-max-thinking.gif" />
-<figcaption>GLM-5.2 thinking through a problem in OpenCode, with <code>reasoning_effort: max</code></figcaption>
+<img alt="Switching GLM reasoning-effort tiers from the OpenCode model picker" src="demo/glm-effort-picker.gif" />
+<figcaption>Picking a GLM reasoning-effort tier in OpenCode (<code>ctrl+x m</code>)</figcaption>
 </figure>
 
-This is configured in [`coding-agents/opencode/settings/juspay.nix`](coding-agents/opencode/settings/juspay.nix)
-via the model's `reasoningEffort` option. To dial it down, change `"max"` to `"high"`,
-`"medium"`, `"low"`, or `"none"`.
+The tiers are defined in [`coding-agents/opencode/settings/juspay.nix`](coding-agents/opencode/settings/juspay.nix);
+all target the same gateway model (`glm-latest`) and differ only in `reasoningEffort`.
 
 ## Coding Agent Setup
 
