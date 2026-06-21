@@ -58,5 +58,14 @@
       apps = forAllSystems (system:
         nixpkgs.lib.mapAttrs (_: pkg: { program = nixpkgs.lib.getExe pkg; type = "app"; }) self.packages.${system}
       );
+
+      # Home Manager module that installs the opencode *configuration* only
+      # (not the binary). System-agnostic — it uses the importing config's
+      # pkgs, so it does not depend on this flake's nixpkgs. See the module
+      # header for usage.
+      homeModules = {
+        opencode = ./coding-agents/opencode/home-module.nix;
+        default = self.homeModules.opencode;
+      };
     };
 }
