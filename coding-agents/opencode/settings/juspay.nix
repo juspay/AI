@@ -20,6 +20,12 @@ let
       options = { inherit reasoningEffort; };
     };
 
+  # GLM-5.2 (glm-latest and its effort-tier siblings) share a 1M-token context
+  # window. output is a deliberate cap well under that window — the gateway
+  # reports a placeholder 1000000 for max output, but max_tokens=1000000 is
+  # rejected (ContextWindowExceededError) once a prompt is included.
+  glmLimits = { context = 1000000; output = 128000; };
+
   models = builtins.mapAttrs mkModel {
     open-large              = { context = 202752;  output = 32000; };
     open-fast               = { context = 196000;  output = 32000; };
@@ -37,10 +43,10 @@ let
     # effort tiers below are sibling picker entries that target the same gateway
     # model via `id`; GLM-5.2 collapses low/medium into "high", so max / high /
     # off are the only distinct levels.
-    glm-latest              = { context = 202752;  output = 32000; };
-    glm-max                 = { context = 202752;  output = 32000; reasoningEffort = "max";  id = "glm-latest"; };
-    glm-high                = { context = 202752;  output = 32000; reasoningEffort = "high"; id = "glm-latest"; };
-    glm-fast                = { context = 202752;  output = 32000; reasoningEffort = "none"; id = "glm-latest"; };
+    glm-latest              = glmLimits;
+    glm-max                 = glmLimits // { reasoningEffort = "max";  id = "glm-latest"; };
+    glm-high                = glmLimits // { reasoningEffort = "high"; id = "glm-latest"; };
+    glm-fast                = glmLimits // { reasoningEffort = "none"; id = "glm-latest"; };
     kimi-latest             = { context = 262000;  output = 32000; };
   };
 in
