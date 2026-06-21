@@ -52,6 +52,22 @@ This starts a local server and opens OpenCode in your default browser. Sessions 
 
 See the [OpenCode Web docs](https://opencode.ai/docs/web/) for more.
 
+### GLM thinking mode
+
+The default model, `glm-latest` (GLM-5.2), runs with **maximum reasoning effort**.
+OpenCode sends `reasoning_effort: "max"` — the top tier the gateway accepts for this
+model — on every request, and renders GLM's reasoning trace in the TUI before each
+answer.
+
+<figure>
+<img alt="OpenCode showing GLM-5.2's reasoning trace before its answer" src="demo/glm-max-thinking.png" />
+<figcaption>GLM-5.2 thinking through a problem in OpenCode, with <code>reasoning_effort: max</code></figcaption>
+</figure>
+
+This is configured in [`coding-agents/opencode/settings/juspay.nix`](coding-agents/opencode/settings/juspay.nix)
+via the model's `reasoningEffort` option. To dial it down, change `"max"` to `"high"`,
+`"medium"`, `"low"`, or `"none"`.
+
 ## Coding Agent Setup
 
 This repo uses [APM](https://microsoft.github.io/apm/) for coding agent configuration. `.claude/` and `.opencode/` are **vendored** — committed to git and kept in sync by a CI check (`apm-sync` workflow).
