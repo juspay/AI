@@ -21,10 +21,11 @@ let
     };
 
   # GLM-5.2 (glm-latest and its effort-tier siblings) share a 1M-token context
-  # window. output is a deliberate cap well under that window — the gateway
-  # reports a placeholder 1000000 for max output, but max_tokens=1000000 is
-  # rejected (ContextWindowExceededError) once a prompt is included.
-  glmLimits = { context = 1000000; output = 128000; };
+  # window (the old 202752 was a copy-paste default). output stays at 32000:
+  # OpenCode caps the wire max_tokens at 32000 for this custom-provider model
+  # regardless of this field (verified), so a higher value would only shrink the
+  # usable input budget without raising the real output limit.
+  glmLimits = { context = 1000000; output = 32000; };
 
   models = builtins.mapAttrs mkModel {
     open-large              = { context = 202752;  output = 32000; };
