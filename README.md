@@ -38,6 +38,31 @@ The `opencode-juspay-*` variants need a `JUSPAY_API_KEY`. If the env var isn't s
 
 This flake's `flake.lock` is **auto-updated daily** via CI, so you always get the latest OpenCode release and skills. If pinning via `flake.lock` in your own flake, run `nix flake update AI` to pull the latest.
 
+## Home Manager module (config only)
+
+If you manage your environment with [Home Manager](https://nix-community.github.io/home-manager/) and already have an `opencode` binary — from `nixpkgs`, or bundled with another tool — you can install **just the Juspay config**, without a wrapper or a second opencode, via the exposed module:
+
+```nix
+# flake inputs
+juspay-ai.url = "github:juspay/AI";
+
+# home configuration
+{
+  imports = [ inputs.juspay-ai.homeModules.opencode ];
+  programs.opencode-juspay.enable = true;
+}
+```
+
+This renders the same `opencode.json` as the packaged variants and writes it to `$XDG_CONFIG_HOME/opencode/opencode.json`. As with the `opencode-juspay-*` variants, the Juspay provider needs `JUSPAY_API_KEY` in the environment at runtime.
+
+| Option | Default | Description |
+|---|---|---|
+| `programs.opencode-juspay.enable` | `false` | Install the config (no binary). |
+| `programs.opencode-juspay.juspay` | `true` | Include the Juspay litellm provider/model settings. Set `false` for the base settings only. |
+| `programs.opencode-juspay.settings` | `{}` | Extra opencode settings merged on top. |
+
+The module is system-agnostic — it uses your config's `pkgs`, so it does not pull in this flake's `nixpkgs`.
+
 ## Tips
 
 ### Web UI
@@ -97,7 +122,7 @@ AI_AGENT='claude --dangerously-skip-permissions' just agent
 ├── .opencode/                # Vendored APM output for OpenCode
 ├── agent/                    # Justfile recipes for apm and agent launch
 ├── coding-agents/
-│   └── opencode/             # OpenCode packages, settings, tests
+│   └── opencode/             # OpenCode packages, settings, home-module, tests
 ├── demo/                     # Demo screencast infrastructure
 ```
 
