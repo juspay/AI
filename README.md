@@ -60,7 +60,7 @@ model — on every request, and renders GLM's reasoning trace in the TUI before 
 answer.
 
 <figure>
-<img alt="OpenCode showing GLM-5.2's reasoning trace before its answer" src="demo/glm-max-thinking.png" />
+<img alt="OpenCode driving GLM-5.2 through an extended reasoning trace at max effort" src="demo/glm-max-thinking.gif" />
 <figcaption>GLM-5.2 thinking through a problem in OpenCode, with <code>reasoning_effort: max</code></figcaption>
 </figure>
 
