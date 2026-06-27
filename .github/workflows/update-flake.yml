@@ -19,21 +19,20 @@ jobs:
       - uses: DeterminateSystems/update-flake-lock@main
         id: update
         with:
+          # PRs opened with the default GITHUB_TOKEN do NOT trigger the CI
+          # workflow, so the required nix checks would never run and auto-merge
+          # would stay blocked. Use a PAT (repo + PR write) when present so CI
+          # runs on the PR; fall back to GITHUB_TOKEN otherwise.
+          token: ${{ secrets.FLAKE_LOCK_PAT || secrets.GITHUB_TOKEN }}
           pr-title: "chore(flake): update inputs"
           commit-msg: "chore(flake): update inputs"
           pr-labels: dependencies
           pr-assignees: ${{ github.repository_owner }}
 
+      # Auto-merge once required CI checks pass. GitHub performs the merge only
+      # when the branch ruleset is satisfied; the PR stays open until then.
       - name: Enable auto-merge
         if: steps.update.outputs.pull-request-number != ''
-        run: |
-          gh pr merge --auto --squash "${{ steps.update.outputs.pull-request-number }}"
+        run: gh pr merge --auto --squash "${{ steps.update.outputs.pull-request-number }}"
         env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Wait for CI
-        if: steps.update.outputs.pull-request-number != ''
-        run: |
-          gh pr checks "${{ steps.update.outputs.pull-request-number }}" --watch --fail-fast
-        env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.FLAKE_LOCK_PAT || secrets.GITHUB_TOKEN }}

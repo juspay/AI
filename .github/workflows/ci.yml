@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: nix build
+        run: nix build --print-build-logs
+
+      - name: nix run .#opencode
+        # opencode runs without any provider API key; --version exercises the
+        # built binary end-to-end (matches the repo's NixOS smoke tests).
+        run: nix run .#opencode -- --version
