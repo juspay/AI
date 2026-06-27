@@ -21,7 +21,10 @@ jobs:
       - name: nix build
         run: nix build --print-build-logs
 
-      - name: nix run .#opencode
-        # opencode runs without any provider API key; --version exercises the
-        # built binary end-to-end (matches the repo's NixOS smoke tests).
-        run: nix run .#opencode -- --version
+      - name: nix run .#opencode (non-interactive prompt)
+        # opencode runs a prompt without any provider API key (bundled model).
+        # Fails the job if the run errors (set -e) or produces no output.
+        run: |
+          output="$(nix run .#opencode -- run 'Reply with exactly: OK')"
+          printf 'opencode output: %s\n' "$output"
+          test -n "$output"
