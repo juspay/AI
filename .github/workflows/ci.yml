@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: nix build
+        run: nix build --print-build-logs
+
+      - name: nix run .#opencode (non-interactive prompt)
+        # opencode runs a prompt without any provider API key (bundled model).
+        # Fails the job if the run errors (set -e) or produces no output.
+        run: |
+          output="$(nix run .#opencode -- run 'Reply with exactly: OK')"
+          printf 'opencode output: %s\n' "$output"
+          test -n "$output"
