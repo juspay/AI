@@ -52,6 +52,8 @@
             configFile = baseConfigFile;
             inherit skillsDir;
           };
+          # Convenience alias: `nix run .#oneclick`
+          oneclick = self.packages.${system}.opencode-juspay-oneclick;
         }
       );
 
