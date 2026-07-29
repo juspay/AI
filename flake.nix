@@ -18,7 +18,8 @@
       pkgsFor = system: import nixpkgs {
         inherit system;
         config.allowUnfree = true;
-        overlays = [ llm-agents.overlays.default ];
+        # overlays.default was removed upstream; shared-nixpkgs is the consumer API.
+        overlays = [ llm-agents.overlays.shared-nixpkgs ];
       };
     in
     {
