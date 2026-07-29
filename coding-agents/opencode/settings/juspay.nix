@@ -49,6 +49,7 @@ let
     glm-high                = glmLimits // { reasoningEffort = "high"; id = "glm-latest"; };
     glm-fast                = glmLimits // { reasoningEffort = "none"; id = "glm-latest"; };
     kimi-latest             = { context = 262000;  output = 32000; };
+    kimi-k3                 = { context = 256000;  output = 32000; };
   };
 in
 {
