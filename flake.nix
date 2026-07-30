@@ -28,11 +28,16 @@
           pkgs = pkgsFor system;
           lib = pkgs.lib;
           opencode = pkgs.llm-agents.opencode;
+          pi = pkgs.llm-agents.pi;
           callOc = path: lib.callPackageWith (pkgs // { inherit opencode; }) (./coding-agents/opencode/packages + "/${path}");
+          callPi = path: lib.callPackageWith (pkgs // { inherit pi; }) (./coding-agents/pi + "/${path}");
           juspayConfigFile = callOc "config.nix" { };
           baseConfigFile = callOc "config.nix" { settings = import ./coding-agents/opencode/settings; };
           # Vendored by apm — see .opencode/skills/ and apm.yml
           skillsDir = ./.opencode/skills;
+          # models.json rendered from the same shared catalog as the opencode
+          # config, so the two agents agree on model ids and limits.
+          piModelsFile = callPi "models-json.nix" { };
         in
         {
           default = callOc "default.nix" {
@@ -52,6 +57,14 @@
           opencode-oneclick = callOc "oneclick.nix" {
             configFile = baseConfigFile;
             inherit skillsDir;
+          };
+          inherit pi;
+          pi-juspay-oneclick = callPi "juspay-oneclick.nix" {
+            modelsFile = piModelsFile;
+            inherit skillsDir;
+          };
+          pi-juspay-editable = callPi "juspay-editable.nix" {
+            modelsFile = piModelsFile;
           };
           # Convenience alias: `nix run .#oneclick`
           oneclick = self.packages.${system}.opencode-juspay-oneclick;
