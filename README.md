@@ -2,7 +2,7 @@
 
 One-click coding agents with Juspay's LLM configuration.
 
-Currently supports **[OpenCode](https://opencode.ai/)** only. Skills are sourced from:
+Supports **[OpenCode](https://opencode.ai/)** and **[pi](https://github.com/badlogic/pi-mono)**. Skills are sourced from:
 
 - [juspay/skills](https://github.com/juspay/skills) — Shared AI agent skills
 - [anthropics/skills](https://github.com/anthropics/skills) — `frontend-design` skill
@@ -25,6 +25,8 @@ nix run github:juspay/AI
 
 This launches an interactive selector. Or run a specific variant directly:
 
+**OpenCode**
+
 | Variant | Command | Description |
 |---|---|---|
 | `opencode-juspay-oneclick` | `nix run github:juspay/AI#opencode-juspay-oneclick` | Juspay config and skills bundled |
@@ -32,7 +34,15 @@ This launches an interactive selector. Or run a specific variant directly:
 | `opencode-juspay-editable` | `nix run github:juspay/AI#opencode-juspay-editable` | Creates editable Juspay config at `~/.config/opencode/opencode.json` ([customize](https://opencode.ai/docs/config/)) |
 | `opencode` | `nix run github:juspay/AI#opencode` | Plain OpenCode, no config |
 
-The `opencode-juspay-*` variants need a `JUSPAY_API_KEY`. If the env var isn't set, the wrapper prompts for it interactively — handy on fresh VMs or containers. Export the var in your shell to skip the prompt on subsequent runs.
+**pi**
+
+| Variant | Command | Description |
+|---|---|---|
+| `pi-juspay-oneclick` | `nix run github:juspay/AI#pi-juspay-oneclick` | Juspay config and skills bundled |
+| `pi-juspay-editable` | `nix run github:juspay/AI#pi-juspay-editable` | Merges Juspay models into `~/.pi/models.json` ([customize](https://github.com/badlogic/pi-mono)) |
+| `pi` | `nix run github:juspay/AI#pi` | Plain pi, no config |
+
+The `*-juspay-*` variants need a `JUSPAY_API_KEY`. If the env var isn't set, the wrapper prompts for it interactively — handy on fresh VMs or containers. Export the var in your shell to skip the prompt on subsequent runs.
 
 ### Daily Updates
 
@@ -98,6 +108,27 @@ GLM-5.2 collapses low/medium into "high", so these are the only distinct levels:
 The tiers are defined in [`coding-agents/opencode/settings/juspay.nix`](coding-agents/opencode/settings/juspay.nix);
 all target the same gateway model (`glm-latest`) and differ only in `reasoningEffort`.
 
+### pi and the LiteLLM gateway
+
+pi (badlogic/pi-mono) supports arbitrary OpenAI-compatible endpoints via its
+`~/.pi/agent/models.json`. The `pi-juspay-*` variants generate this file from
+the same shared catalog as the OpenCode config, keeping model ids and limits
+in sync between the two agents.
+
+To use a model with pi:
+
+```bash
+# Interactive (prompts for JUSPAY_API_KEY if not set)
+nix run github:juspay/AI#pi-juspay-oneclick -- --model litellm/kimi-k3
+
+# With API key already exported: oneclick keeps pi's state off ~/.pi; the
+# editable variant instead merges Juspay into your existing ~/.pi/models.json
+nix run github:juspay/AI#pi-juspay-editable -- --model litellm/glm-latest
+```
+
+You can also select a reasoning-effort tier per session with pi's thinking
+suffix, e.g. `--model litellm/glm-latest:max` or `--model litellm/glm-latest,low,med,high`.
+
 ## Coding Agent Setup
 
 This repo uses [APM](https://microsoft.github.io/apm/) for coding agent configuration. `.claude/` and `.opencode/` are **vendored** — committed to git and kept in sync by a CI check (`apm-sync` workflow).
@@ -122,7 +153,9 @@ AI_AGENT='claude --dangerously-skip-permissions' just agent
 ├── .opencode/                # Vendored APM output for OpenCode
 ├── agent/                    # Justfile recipes for apm and agent launch
 ├── coding-agents/
-│   └── opencode/             # OpenCode packages, settings, home-module, tests
+│   ├── catalog.nix           # Shared Juspay model catalog (opencode, pi)
+│   ├── opencode/             # OpenCode packages, settings, home-module, tests
+│   └── pi/                   # pi packages and models.json generation
 ├── demo/                     # Demo screencast infrastructure
 ```
 
