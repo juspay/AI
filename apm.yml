@@ -9,5 +9,6 @@ dependencies:
   apm:
   - juspay/skills
   - anthropics/skills/skills/frontend-design
+  - juspay/kolu/agents/.apm/skills/kolu
   mcp: []
 scripts: {}

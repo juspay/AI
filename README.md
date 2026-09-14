@@ -6,6 +6,7 @@ Supports **[OpenCode](https://opencode.ai/)** and **[pi](https://github.com/badl
 
 - [juspay/skills](https://github.com/juspay/skills) — Shared AI agent skills
 - [anthropics/skills](https://github.com/anthropics/skills) — `frontend-design` skill
+- [juspay/kolu](https://github.com/juspay/kolu/tree/master/agents/.apm/skills/kolu) — `kolu` terminal automation skill
 
 <figure>
 <img alt="OpenCode demo: variant selector, oneclick, and hello world prompt" src="demo/demo.gif" />
