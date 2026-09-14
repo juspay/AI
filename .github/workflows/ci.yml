@@ -30,7 +30,7 @@ jobs:
         with:
           # Trust the project cache so builds pull from it (warms nix run /
           # nix develop on both platforms) instead of rebuilding.
-          extra_conf: |
+          extra-conf: |
             extra-substituters = https://cache.nixos.asia/oss
             extra-trusted-public-keys = oss:KO872wNJkCDgmGN3xy9dT89WAhvv13EiKncTtHDItVU=
 
@@ -61,18 +61,37 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -f paths.txt ] || [ ! -s paths.txt ]; then
-            echo "no built paths to push"
-            exit 0
+          if [ ! -s paths.txt ]; then
+            echo "::error::no built store paths were recorded by the build steps"
+            exit 1
           fi
+          sort -u paths.txt > roots.txt
+          echo "build roots: $(wc -l < roots.txt)"
           # Runtime closures of the outputs, plus each output's realized
-          # build-time inputs (FODs a rebuild still needs). attic's upstream
-          # filter drops anything already on cache.nixos.org.
-          {
-            sort -u paths.txt
-            while IFS= read -r p; do
-              drv=$(nix-store -q --deriver "$p")
-              [ -n "$drv" ] && [ "$drv" != unknown-deriver ] || continue
-              nix-store -qR --include-outputs "$drv"
-            done < <(sort -u paths.txt)
-          } | awk 'NF && !seen[$0]++' | attic push --stdin oss
+          # build-time inputs (the pi npm-deps FOD a rebuild still needs).
+          # A substituted output has no local .drv — skip it rather than
+          # letting nix-store error out the step. attic's upstream filter
+          # drops anything already on cache.nixos.org, so a zero-upload run
+          # is normal once the cache is warm.
+          while IFS= read -r p; do
+            drv=$(nix-store -q --deriver "$p" 2>/dev/null || true)
+            case "$drv" in ''|unknown-deriver) continue ;; esac
+            [ -e "$drv" ] || continue
+            nix-store -qR --include-outputs "$drv" 2>/dev/null || true
+          done < roots.txt | cat roots.txt - | awk 'NF && !seen[$0]++' > push.txt
+          echo "closure paths offered to attic: $(wc -l < push.txt)"
+          attic push --stdin oss < push.txt
+          echo "attic push finished"
+          # Post-condition: every build root must now be fetchable from the
+          # cache. Without this the step is green even when nothing landed.
+          missing=0
+          while IFS= read -r p; do
+            hash=$(basename "$p" | cut -d- -f1)
+            if curl -fsS -o /dev/null "https://cache.nixos.asia/oss/$hash.narinfo"; then
+              echo "  cached: $(basename "$p")"
+            else
+              echo "::error::$p is absent from cache.nixos.asia/oss after push"
+              missing=1
+            fi
+          done < roots.txt
+          [ "$missing" -eq 0 ]
