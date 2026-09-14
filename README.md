@@ -148,8 +148,8 @@ nix run github:juspay/AI#omp-juspay-oneclick -- --model litellm/kimi-k3
 nix run github:juspay/AI#omp-juspay-editable -- --model litellm/glm-latest --thinking high
 ```
 
-The one-click variant uses a temporary `PI_CODING_AGENT_DIR` and adds the
-vendored skills through `--skill`. The editable variant asks `omp config path`
+The one-click variant uses a temporary `PI_CODING_AGENT_DIR` and loads the
+vendored skills through its `config.yml`. The editable variant asks `omp config path`
 for the agent directory (normally `~/.omp/agent`), honoring environment-based
 directory and profile overrides. It only creates `models.yml` if no
 `models.yml`, `models.yaml`, or legacy `models.json` exists; existing model
