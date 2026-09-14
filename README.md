@@ -2,7 +2,7 @@
 
 One-click coding agents with Juspay's LLM configuration.
 
-Supports **[OpenCode](https://opencode.ai/)** and **[pi](https://github.com/badlogic/pi-mono)**. Skills are sourced from:
+Supports **[OpenCode](https://opencode.ai/)**, **[pi](https://github.com/badlogic/pi-mono)**, and **[Oh My Pi (OMP)](https://github.com/can1357/oh-my-pi)**. Skills are sourced from:
 
 - [juspay/skills](https://github.com/juspay/skills) — Shared AI agent skills
 - [anthropics/skills](https://github.com/anthropics/skills) — `frontend-design` skill
@@ -42,6 +42,14 @@ This launches an interactive selector. Or run a specific variant directly:
 | `pi-juspay-oneclick` | `nix run github:juspay/AI#pi-juspay-oneclick` | Juspay config and skills bundled |
 | `pi-juspay-editable` | `nix run github:juspay/AI#pi-juspay-editable` | Merges Juspay models into `~/.pi/models.json` ([customize](https://github.com/badlogic/pi-mono)) |
 | `pi` | `nix run github:juspay/AI#pi` | Plain pi, no config |
+
+**Oh My Pi**
+
+| Variant | Command | Description |
+|---|---|---|
+| `omp-juspay-oneclick` | `nix run github:juspay/AI#omp-juspay-oneclick` | Juspay models and skills bundled |
+| `omp-juspay-editable` | `nix run github:juspay/AI#omp-juspay-editable` | Initializes editable Juspay models at `~/.omp/agent/models.yml`, preserving existing configuration |
+| `omp` | `nix run github:juspay/AI#omp` | Plain Oh My Pi, no config |
 
 The `*-juspay-*` variants need a `JUSPAY_API_KEY`. If the env var isn't set, the wrapper prompts for it interactively — handy on fresh VMs or containers. Export the var in your shell to skip the prompt on subsequent runs.
 
@@ -130,6 +138,25 @@ nix run github:juspay/AI#pi-juspay-editable -- --model litellm/glm-latest
 You can also select a reasoning-effort tier per session with pi's thinking
 suffix, e.g. `--model litellm/glm-latest:max` or `--model litellm/glm-latest,low,med,high`.
 
+### Oh My Pi and the LiteLLM gateway
+
+OMP uses `models.yml` rather than pi's `models.json`. The `omp-juspay-*`
+variants generate the model list from the same shared Juspay catalog.
+
+```bash
+nix run github:juspay/AI#omp-juspay-oneclick -- --model litellm/kimi-k3
+nix run github:juspay/AI#omp-juspay-editable -- --model litellm/glm-latest --thinking high
+```
+
+The one-click variant uses a temporary `PI_CODING_AGENT_DIR` and loads the
+vendored skills through its `config.yml`. The editable variant asks `omp config path`
+for the agent directory (normally `~/.omp/agent`), honoring environment-based
+directory and profile overrides. It only creates `models.yml` if no
+`models.yml`, `models.yaml`, or legacy `models.json` exists; existing model
+configuration is never overwritten. If you already have a models file, add
+the Juspay provider there using OMP's [model configuration documentation](https://github.com/can1357/oh-my-pi/blob/main/docs/models.md).
+The API key is referenced through `JUSPAY_API_KEY`, not written into the file.
+
 ## Coding Agent Setup
 
 This repo uses [APM](https://microsoft.github.io/apm/) for coding agent configuration. `.claude/` and `.opencode/` are **vendored** — committed to git and kept in sync by a CI check (`apm-sync` workflow).
@@ -154,8 +181,9 @@ AI_AGENT='claude --dangerously-skip-permissions' just agent
 ├── .opencode/                # Vendored APM output for OpenCode
 ├── agent/                    # Justfile recipes for apm and agent launch
 ├── coding-agents/
-│   ├── catalog.nix           # Shared Juspay model catalog (opencode, pi)
+│   ├── catalog.nix           # Shared Juspay model catalog (opencode, pi, omp)
 │   ├── opencode/             # OpenCode packages, settings, home-module, tests
+│   ├── omp/                  # Oh My Pi packages and models.yml generation
 │   └── pi/                   # pi packages and models.json generation
 ├── demo/                     # Demo screencast infrastructure
 ```
