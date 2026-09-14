@@ -1,6 +1,6 @@
 # Single source of truth for the Juspay LiteLLM gateway
 # (https://grid.ai.juspay.net) model catalog, shared by every coding agent
-# this repo packages (opencode, pi). Adding or tuning a model here updates
+# this repo packages (opencode, pi, omp). Adding or tuning a model here updates
 # all agents at once, keeping their model ids and limits in sync.
 #
 # Each entry:

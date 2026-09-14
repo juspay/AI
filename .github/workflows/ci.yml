@@ -33,6 +33,10 @@ jobs:
         run: |
           nix build --print-build-logs .#pi .#pi-juspay-oneclick .#pi-juspay-editable
 
+      - name: nix build Oh My Pi variants
+        run: |
+          nix build --print-build-logs .#omp .#omp-juspay-oneclick .#omp-juspay-editable
+
       - name: nix run .#opencode (non-interactive prompt)
         # opencode runs a prompt without any provider API key (bundled model).
         # Fails the job if the run errors (set -e) or produces no output.
