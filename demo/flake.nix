@@ -2,11 +2,11 @@
   description = "Demo screencast generator";
 
   inputs = {
-    oc.url = "github:juspay/oc";
-    nixpkgs.follows = "oc/nixpkgs";
+    ai.url = "github:juspay/AI";
+    nixpkgs.follows = "ai/nixpkgs";
   };
 
-  outputs = { self, nixpkgs, oc }:
+  outputs = { self, nixpkgs, ai }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};

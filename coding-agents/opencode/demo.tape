@@ -18,12 +18,12 @@ Set Theme "Catppuccin Mocha"
 Set Padding 20
 
 # Type the run command
-Type "nix run github:juspay/oc"
+Type "nix run github:juspay/AI"
 Sleep 500ms
 Enter
 
 # Wait for the gum choose variant selector
-Wait+Screen /Choose OpenCode variant/
+Wait+Screen /Choose a coding agent variant/
 
 Sleep 1s
 

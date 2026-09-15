@@ -1,4 +1,4 @@
-{ oc }:
+{ ai }:
 let common = import ./common.nix;
 in
 {
@@ -7,7 +7,7 @@ in
   nodes.machine = { pkgs, ... }: {
     imports = [ common.baseNode ];
     environment.systemPackages = [
-      oc.packages.${pkgs.stdenv.hostPlatform.system}.opencode-juspay-editable
+      ai.packages.${pkgs.stdenv.hostPlatform.system}.opencode-juspay-editable
     ];
     environment.variables.JUSPAY_API_KEY = "test-api-key";
   };

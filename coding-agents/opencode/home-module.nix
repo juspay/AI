@@ -21,19 +21,14 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.programs.opencode-juspay;
-  inherit (lib) mkEnableOption mkOption mkIf types optionalAttrs;
+  inherit (lib) mkEnableOption mkOption mkIf types;
 
-  baseSettings = import ./settings;
-  juspaySettings = import ./settings/juspay.nix;
-
-  settings =
-    baseSettings
-    // optionalAttrs cfg.juspay juspaySettings
-    // cfg.settings;
-
-  # Reuse the canonical renderer so the module and the packaged variants
-  # cannot drift apart.
-  configFile = import ./packages/config.nix { inherit pkgs settings; };
+  # The canonical renderer owns the settings composition, so the module and the
+  # packaged variants cannot drift apart.
+  configFile = import ./packages/config.nix {
+    inherit pkgs;
+    inherit (cfg) juspay settings;
+  };
 in
 {
   options.programs.opencode-juspay = {

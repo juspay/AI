@@ -1,11 +1,16 @@
 { pkgs, lib, opencode, configFile }:
 let
-  ocLib = import ./lib.nix { inherit pkgs; };
+  wrapper = import ../../wrapper.nix { inherit pkgs; };
 in
 pkgs.writeShellApplication {
   name = "opencode";
   text = ''
-    ${ocLib.mkInitScript configFile}
+    ${wrapper.ensureApiKey}
+    ${wrapper.seedConfigFile {
+      src = configFile;
+      dir = "$HOME/.config/opencode";
+      name = "opencode.json";
+    }}
     exec ${lib.getExe opencode} "$@"
   '';
 }

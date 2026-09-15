@@ -11,8 +11,8 @@
         ]
     , build.flakes =
         [ "."
-        , "./demo" { overrideInputs = [("oc", ".")] }
-        , "./coding-agents/opencode/test/standalone" { overrideInputs = [("oc", ".")] }
+        , "./demo" { overrideInputs = [("ai", ".")] }
+        , "./coding-agents/test/standalone" { overrideInputs = [("ai", ".")] }
         ]
     , signoff.enable = True
     , cache.url = if

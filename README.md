@@ -159,12 +159,13 @@ The API key is referenced through `JUSPAY_API_KEY`, not written into the file.
 
 ## Coding Agent Setup
 
-This repo uses [APM](https://microsoft.github.io/apm/) for coding agent configuration. `.claude/` and `.opencode/` are **vendored** — committed to git and kept in sync by a CI check (`apm-sync` workflow).
+This repo uses [APM](https://microsoft.github.io/apm/) for coding agent configuration. `.claude/` and `.opencode/` are **vendored** — committed to git and regenerated with `just agent::apm-vendor`.
 
 ```bash
 just agent                # launch agent (default: claude)
 just agent::apm-vendor    # regenerate vendored .claude/ and .opencode/
 just agent::update        # update apm deps to latest, then re-vendor
+just test                 # run the wrapper package tests (NixOS VMs, Linux only)
 ```
 
 Override the agent with `AI_AGENT`:
@@ -182,9 +183,13 @@ AI_AGENT='claude --dangerously-skip-permissions' just agent
 ├── agent/                    # Justfile recipes for apm and agent launch
 ├── coding-agents/
 │   ├── catalog.nix           # Shared Juspay model catalog (opencode, pi, omp)
-│   ├── opencode/             # OpenCode packages, settings, home-module, tests
+│   ├── wrapper.nix           # Shared wrapper shell: key prompt, temp dir, config seeding
+│   ├── providers.nix         # Shared catalog → models-file provider block (pi, omp)
+│   ├── selector.nix          # `nix run` variant chooser (see flake.nix's frontDoor)
+│   ├── opencode/             # OpenCode packages, settings, home-module
 │   ├── omp/                  # Oh My Pi packages and models.yml generation
-│   └── pi/                   # pi packages and models.json generation
+│   ├── pi/                   # pi packages and models.json generation
+│   └── test/standalone/      # Wrapper package tests (NixOS VM flake)
 ├── demo/                     # Demo screencast infrastructure
 ```
 

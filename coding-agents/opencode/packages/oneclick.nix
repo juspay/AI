@@ -1,11 +1,15 @@
 { pkgs, lib, opencode, configFile, skillsDir }:
 let
-  ocLib = import ./lib.nix { inherit pkgs; };
+  wrapper = import ../../wrapper.nix { inherit pkgs; };
 in
 pkgs.writeShellApplication {
   name = "opencode";
   text = ''
-    ${ocLib.setupConfigDir { inherit configFile skillsDir; }}
+    ${wrapper.mkTempAgentDir {
+      envVar = "OPENCODE_CONFIG_DIR";
+      prefix = "opencode-config";
+      links = { "opencode.json" = configFile; skills = skillsDir; };
+    }}
     exec ${lib.getExe opencode} "$@"
   '';
 }
