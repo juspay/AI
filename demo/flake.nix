@@ -4,13 +4,18 @@
   inputs = {
     ai.url = "github:juspay/AI";
     nixpkgs.follows = "ai/nixpkgs";
+
+    # Pinned for vhs 0.11.0: vhs 0.12.0 (what ai/nixpkgs carries) runs the whole
+    # tape, prints "Creating <file>…", exits 0 and writes no GIF — re-check when
+    # bumping this, and drop the pin once nixpkgs' vhs records again.
+    vhs-nixpkgs.url = "github:NixOS/nixpkgs/2c423e03bbafcff28bfadc6781a4a8257f205cb5";
   };
 
-  outputs = { self, nixpkgs, ai }:
+  outputs = { self, nixpkgs, ai, vhs-nixpkgs }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
-      demoDeps = [ pkgs.vhs pkgs.bc ];
+      demoDeps = [ vhs-nixpkgs.legacyPackages.${system}.vhs pkgs.bc ];
     in
     {
       apps.${system}.default = {
