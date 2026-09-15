@@ -1,17 +1,17 @@
 # Demo Screencast
 
-Records a GIF of the OpenCode variant selector → oneclick → hello world prompt using [VHS](https://github.com/charmbracelet/vhs).
+Records a GIF of `nix run .` → omp's first-run setup → a hello-world prompt answered by the Juspay gateway, using [VHS](https://github.com/charmbracelet/vhs).
 
 ## Usage
 
 From the repo root:
 
 ```bash
-export JUSPAY_API_KEY=your-key
+export LITELLM_API_KEY=your-gateway-key
 just demo
 ```
 
-This runs `vhs demo.tape` and outputs `demo.gif`, which is linked from the main [README](../README.md).
+This runs `vhs demo/demo.tape` and outputs `demo.gif`, which is linked from the main [README](../README.md). The key is only ever read from the environment, so it never appears in the recording.
 
 ## How it works
 
@@ -35,14 +35,23 @@ Enter
 Wait+Screen /ALFABRAVO/
 ```
 
+### The first-run setup wizard
+
+The wrapper gives omp a fresh `PI_CODING_AGENT_DIR` on every run, so every run is
+a first run: omp opens its five-step setup wizard before the prompt. The tape
+skips it with `Escape`, but never on a timer — each `Escape` is preceded by
+`Wait+Screen /Setup step N of 5/`, so a slower machine delays the tape instead of
+desynchronising it. Recording without those waits is how keystrokes end up typed
+into a provider login form.
+
 ## Editing
 
-Modify the agent-specific `.tape` file (e.g., [`coding-agents/opencode/demo.tape`](../coding-agents/opencode/demo.tape)) to change the recording. Key commands:
+Modify [`demo.tape`](demo.tape) to change the recording. Key commands:
 
 | Command | Purpose |
 |---|---|
 | `Type "..."` | Simulate typing |
-| `Enter`, `Down` | Key presses |
+| `Enter`, `Escape` | Key presses |
 | `Wait+Screen /regex/` | Wait for text to appear |
 | `Sleep 5s` | Fixed pause |
 

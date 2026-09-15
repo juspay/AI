@@ -1,9 +1,13 @@
-# OpenCode Demo
-# Records a screencast of the variant selector → oneclick → hello world prompt
+# Oh My Pi demo
+# Records a screencast of `nix run .` → first-run setup → a hello-world prompt
+# answered by the Juspay gateway's default model.
 #
-# Usage:
-#   export JUSPAY_API_KEY=your-key
-#   vhs demo.tape
+# Usage (from the repo root):
+#   export LITELLM_API_KEY=your-gateway-key
+#   just demo
+#
+# The key is read from the environment vhs inherits — never typed on screen, so
+# it cannot end up in the GIF.
 
 Output demo.gif
 
@@ -17,30 +21,47 @@ Set TypingSpeed 50ms
 Set Theme "Catppuccin Mocha"
 Set Padding 20
 # The reply is an LLM round-trip; give the marker waits room (default is 15s).
-Set WaitTimeout 120s
+Set WaitTimeout 180s
 
-# Type the run command
-Type "nix run github:juspay/AI"
+# Type the run command. `nix run .` rather than `nix run github:juspay/AI` so the
+# recording shows *this* checkout — the published flake would be one release
+# behind whatever is being demoed.
+Type "nix run ."
 Sleep 500ms
 Enter
 
-# Wait for the gum choose variant selector
-Wait+Screen /Choose a coding agent variant/
-
-# The first option is the Juspay one-click variant, so just press Enter. Hold the
-# menu on screen for a beat so the recording captures it.
-Sleep 3s
-Enter
-
-# Wait for OpenCode TUI to load
-Wait+Screen /Ask anything/
+# The wrapper hands omp a fresh agent directory every run, so every run starts
+# in omp's five-step setup wizard. Esc skips a step; none of it is needed here,
+# since the wrapper already points omp at the gateway. Each Escape waits for the
+# step it is answering, so the tape cannot get ahead of the TUI.
+Wait+Screen /Setup step 1 of 5/
 Sleep 2s
+Escape
+Wait+Screen /Setup step 2 of 5/
+Sleep 1s
+Escape
+Wait+Screen /Setup step 3 of 5/
+Sleep 1s
+Escape
+Wait+Screen /Setup step 4 of 5/
+Sleep 1s
+Escape
+Wait+Screen /Setup step 5 of 5/
+Sleep 1s
+Escape
 
-# Type a hello world prompt.
+# The status line carries the model omp resolved for the `default` role — a
+# gateway id, discovered at startup rather than vendored — so it doubles as the
+# "we are on the Juspay gateway" marker.
+Wait+Screen /glm-latest/
+Sleep 3s
+
+# A hello-world prompt that needs no tools, so nothing stops for an approval.
 # Trick: ask the LLM to concatenate two words (ALFA+BRAVO) and print the result.
 # The prompt contains "ALFA" and "BRAVO" separately, but never "ALFABRAVO" as
-# one string — so Wait+Screen only matches when the LLM outputs the combined form.
-Type "briefly explain this repo. Then print ALFA concatenated with BRAVO."
+# one string — so Wait+Screen only matches when the LLM outputs the combined
+# form. See demo/README.md.
+Type "In one sentence, say what Oh My Pi is. Then print ALFA concatenated with BRAVO."
 Sleep 500ms
 Enter
 
@@ -48,7 +69,7 @@ Enter
 Wait+Screen /ALFABRAVO/
 Sleep 4s
 
-# Exit OpenCode cleanly
+# Exit omp cleanly
 Type "/exit"
 Enter
 Sleep 2s
