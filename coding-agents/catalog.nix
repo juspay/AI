@@ -1,34 +1,23 @@
-# What this repo's agents know about the Juspay LiteLLM gateway: our policy —
-# where the gateway is, which key unlocks it, which model we recommend — wrapped
-# around a snapshot of what the gateway actually serves.
+# What this repo knows about the Juspay LiteLLM gateway: where it is, which key
+# unlocks it, and which models the agent starts on.
 #
-# OMP asks the gateway itself at runtime (it ships LiteLLM discovery), so the
-# snapshot is for the agent that cannot: opencode's provider catalog is
-# models.dev plus models declared in config, and a private gateway is in
-# neither. It is a snapshot rather than a hand-kept list because availability is
-# per key and limits move — refresh it with `just refresh-gateway-models`.
+# There is deliberately no model catalog here. OMP ships LiteLLM discovery, so
+# it asks the gateway at startup what it serves — ids, context windows,
+# capabilities — and a vendored snapshot could only go stale against it.
 let
   gatewayUrl = "https://grid.ai.juspay.net";
-  models = import ./gateway-models.nix;
-
-  # A recommended model must be in the snapshot, so a gateway rename cannot
-  # leave a dangling default in an agent's config.
-  requireModel = name:
-    if builtins.hasAttr name models
-    then name
-    else throw "catalog: '${name}' is not in gateway-models.nix (run `just refresh-gateway-models`)";
 in
 {
   inherit gatewayUrl;
 
   apiKeyEnv = "JUSPAY_API_KEY";
 
-  # Where the wrappers' prompt sends users to create that key.
+  # Where the wrapper's prompt sends users to create that key.
   apiKeyUrl = "${gatewayUrl}/dashboard";
 
-  # The models an agent starts on.
-  defaultModel = requireModel "glm-latest";
-  smallModel = requireModel "open-fast";
-
-  inherit models;
+  # The models the agent starts on, as role assignments rather than a catalog.
+  # Each must be an id the gateway actually serves: nothing here validates them,
+  # and OMP falls back to its own first-available model if one goes missing.
+  defaultModel = "glm-latest";
+  smallModel = "open-fast";
 }
