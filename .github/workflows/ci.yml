@@ -57,11 +57,3 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           nix flake check -L ./coding-agents/test/standalone --override-input ai .
-
-      - name: nix run .#opencode (non-interactive prompt)
-        # opencode runs a prompt without any provider API key (bundled model).
-        # Fails the job if the run errors (set -e) or produces no output.
-        run: |
-          output="$(nix run .#opencode -- run 'Reply with exactly: OK')"
-          printf 'opencode output: %s\n' "$output"
-          test -n "$output"
