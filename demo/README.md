@@ -35,14 +35,23 @@ Enter
 Wait+Screen /ALFABRAVO/
 ```
 
-### Settling before typing
+### Waiting for the input box, then settling
 
 The wrapper skips omp's setup wizard (`OMP_SKIP_SETUP=1`; it has already
 configured provider, key and model), so the welcome screen is the first thing
-up and `Wait+Screen /glm-latest/` is the readiness marker. omp then checks for
-updates in the background and redraws when the "Update Available" banner lands;
-keystrokes typed across that redraw were lost on a recording machine, so the
-tape sleeps a few seconds after the marker before typing the prompt.
+up. The welcome *splash* is not a readiness marker, though: it prints the model
+id seconds before the input box exists, and on a loaded machine a prompt typed
+into that gap is dropped when omp switches the terminal to raw mode — the
+recording then sits on the welcome screen until the `ALFABRAVO` wait times out.
+So the tape waits for `/glm-latest.*%/`, which only matches the prompt status
+line (model id and context-used percentage on one line), not the splash.
+
+omp then checks for updates in the background and redraws when the "Update
+Available" banner lands; keystrokes typed across that redraw were lost on a
+recording machine, so the tape sleeps a few seconds after the marker before
+typing the prompt, and waits for `/BRAVO/` — part of the typed text — before
+pressing Enter, so lost keystrokes fail at the typing rather than at the
+response wait.
 
 ### Fonts
 
