@@ -1,9 +1,8 @@
 # Shell bootstrap shared by every agent wrapper in this repo: the Juspay key
-# prompt, the throwaway per-run config directory the *-oneclick variants hand
-# their agent, and the seed-a-writable-config step the *-editable variants
-# perform. Each helper renders a shell fragment; what is agent-specific — which
-# files the agent reads, which env var points at its config root — stays at the
-# call sites.
+# prompt and the throwaway per-run config directory the *-oneclick variants hand
+# their agent. Each helper renders a shell fragment; what is agent-specific —
+# which files the agent reads, which env var points at its config root — stays
+# at the call sites.
 { pkgs }:
 let
   inherit (pkgs) lib;
@@ -67,17 +66,4 @@ MSG
         "chmod u+w \"\$${envVar}/${name}\""
       ]) (lib.attrNames copies)
     );
-
-  # Seed a writable config file the first time an *-editable variant runs:
-  # create the directory, copy the generated file in, make it writable. Skipped
-  # once the user has a config of their own — `existing` lists every path that
-  # counts as one (agents that also read a legacy filename list it too).
-  seedConfigFile = { src, dir, name, existing ? [ "${dir}/${name}" ] }:
-    lib.concatStringsSep "\n" [
-      "if ${lib.concatMapStringsSep " && " (path: "[ ! -e \"${path}\" ]") existing}; then"
-      "mkdir -p \"${dir}\""
-      "cp ${src} \"${dir}/${name}\""
-      "chmod u+w \"${dir}/${name}\""
-      "fi"
-    ];
 }

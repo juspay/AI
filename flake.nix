@@ -54,7 +54,6 @@
             pi-juspay-editable = callPi "juspay-editable.nix" { modelsFile = piModelsFile; };
             inherit omp;
             omp-juspay-oneclick = callOmp "juspay-oneclick.nix" { modelsFile = ompModelsFile; inherit skillsDir; };
-            omp-juspay-editable = callOmp "juspay-editable.nix" { modelsFile = ompModelsFile; };
           };
 
           # What a bare `nix run` offers, in menu order. Each name must be a key
@@ -69,7 +68,6 @@
             { name = "pi-juspay-editable"; description = "Merges Juspay models into ~/.pi/models.json"; }
             { name = "pi"; description = "Plain pi, no config"; }
             { name = "omp-juspay-oneclick"; description = "Oh My Pi with Juspay models and skills bundled"; }
-            { name = "omp-juspay-editable"; description = "Initializes editable Juspay models at ~/.omp/agent/models.yml"; }
             { name = "omp"; description = "Plain Oh My Pi, no config"; }
           ];
         in

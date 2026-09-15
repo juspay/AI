@@ -49,7 +49,14 @@ jobs:
 
       - name: nix build Oh My Pi variants
         run: |
-          nix build --print-build-logs .#omp .#omp-juspay-oneclick .#omp-juspay-editable
+          nix build --print-build-logs .#omp .#omp-juspay-oneclick
+
+      - name: Wrapper package tests
+        # The wrapper tests boot NixOS VMs, so they only run where a Linux
+        # builder exists. `nix flake check` builds the whole checks set.
+        if: runner.os == 'Linux'
+        run: |
+          nix flake check -L ./coding-agents/test/standalone --override-input ai .
 
       - name: nix run .#opencode (non-interactive prompt)
         # opencode runs a prompt without any provider API key (bundled model).

@@ -2,10 +2,11 @@
   description = "Standalone wrapper package tests";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     # The flake under test — override it with `--override-input ai .` from the
-    # repo root (what `just test` and vira.hs do).
+    # repo root (what `just test` and CI do). Its nixpkgs drives the VMs too, so
+    # the test closures share store paths with the packages under test.
     ai.url = "github:juspay/AI";
+    nixpkgs.follows = "ai/nixpkgs";
   };
 
   outputs = { self, nixpkgs, ai }:
