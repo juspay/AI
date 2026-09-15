@@ -2,7 +2,7 @@
 
 One-click coding agents with Juspay's LLM configuration.
 
-Supports **[OpenCode](https://opencode.ai/)** and **[Oh My Pi (OMP)](https://github.com/can1357/oh-my-pi)**. Skills are sourced from:
+Supports **[OpenCode](https://opencode.ai/)** and **[Oh My Pi (OMP)](https://github.com/can1357/oh-my-pi)**. Skills are built from these sources into an OMP plugin at build time (see [Skills](#skills)):
 
 - [juspay/skills](https://github.com/juspay/skills) — Shared AI agent skills
 - [anthropics/skills](https://github.com/anthropics/skills) — `frontend-design` skill
@@ -119,8 +119,8 @@ capabilities — at startup:
 nix run github:juspay/AI#omp-juspay-oneclick -- --model litellm/kimi-k3
 ```
 
-The variant also uses a temporary `PI_CODING_AGENT_DIR` and loads the vendored
-skills through its `config.yml`. What the picker shows is what your key can
+The variant also uses a temporary `PI_CODING_AGENT_DIR` and loads the skills
+plugin through its `config.yml` `extensions:` key. What the picker shows is what your key can
 actually call, with the limits the gateway enforces. If you run OMP yourself
 rather than through the wrapper, those same two variables are all it needs:
 
@@ -149,31 +149,55 @@ snapshot reflects the key used to refresh it — `git log` on that file is its
 clock. The `opencode-juspay-editable` variant seeds its config once and then
 leaves it alone, so that copy is yours: delete it to pick up a newer snapshot.
 
-## Coding Agent Setup
+## Skills
 
-This repo uses [APM](https://microsoft.github.io/apm/) for coding agent configuration. `.claude/` and `.opencode/` are **vendored** — committed to git and regenerated with `just agent::apm-vendor`.
+The skills listed at the top are **not vendored into this repo**.
+[`coding-agents/omp/plugin.nix`](coding-agents/omp/plugin.nix) composes them in
+the Nix store into one directory that Oh My Pi loads as an **extension**:
 
-```bash
-just agent                      # launch agent (default: claude)
-just agent::apm-vendor          # regenerate vendored .claude/ and .opencode/
-just agent::update              # update apm deps to latest, then re-vendor
-just test                       # run the wrapper package tests (NixOS VMs, Linux only)
-just refresh-gateway-models     # refresh the gateway model snapshot (needs the key)
+```
+/nix/store/...-omp-juspay-skills-plugin/
+└── skills/
+    ├── nix-haskell/SKILL.md      # …and the rest of juspay/skills
+    ├── frontend-design/SKILL.md  # anthropics/skills
+    └── kolu/SKILL.md             # juspay/kolu
 ```
 
-Override the agent with `AI_AGENT`:
+The layout is the whole contract. `omp-juspay-oneclick` names that directory
+under `extensions:` in its generated `config.yml`, and OMP's `omp-plugins` skill
+provider scans `skills/<name>/SKILL.md` beside it — one level deep,
+non-recursively, with `skills` hardcoded in OMP.
+
+opencode has no notion of extensions, so the `opencode-*-oneclick` variants are
+handed the `skills/` subdirectory directly. One build, two consumers.
+
+`nix flake update` picks up new skills; there is nothing to re-vendor — with
+one exception. juspay/skills and anthropics/skills are flake inputs, so they
+follow the lock. **kolu is pinned by hand** inside `plugin.nix`: its `SKILL.md`
+lives under a path kolu marks `export-ignore`, which every Nix flake fetcher
+honours, so no flake input can see it. Bumping it means editing the `rev` and
+`hash` there.
+
+To get the same skills in your own agent without this flake, install them from
+the marketplace instead — see
+[juspay/skills](https://github.com/juspay/skills#usage):
+
+```
+/marketplace add juspay/skills          # Oh My Pi
+/plugin marketplace add juspay/skills   # Claude Code
+```
+
+## Development
 
 ```bash
-AI_AGENT=opencode just agent
-AI_AGENT='claude --dangerously-skip-permissions' just agent
+just test                       # run the wrapper package tests (NixOS VMs, Linux only)
+just refresh-gateway-models     # refresh the gateway model snapshot (needs the key)
+just demo                       # re-record the demo screencast
 ```
 
 ## Repo Structure
 
 ```
-├── .claude/                  # Vendored APM output for Claude Code
-├── .opencode/                # Vendored APM output for OpenCode
-├── agent/                    # Justfile recipes for apm and agent launch
 ├── coding-agents/
 │   ├── catalog.nix           # Gateway policy (URL, key name, recommendation)
 │   ├── gateway-models.nix    # GENERATED: what the gateway serves (for opencode)
@@ -181,16 +205,17 @@ AI_AGENT='claude --dangerously-skip-permissions' just agent
 │   ├── wrapper.nix           # Shared wrapper shell: key prompt, temp config dir
 │   ├── selector.nix          # `nix run` variant chooser (see flake.nix's frontDoor)
 │   ├── opencode/             # OpenCode packages, settings, home-module
-│   ├── omp/                  # Oh My Pi packages
+│   ├── omp/                  # Oh My Pi packages, incl. plugin.nix (the skill bundle)
 │   └── test/standalone/      # Wrapper package tests (NixOS VM flake)
 ├── demo/                     # Demo screencast infrastructure
 ```
 
-Skills are vendored via APM into `.claude/` and `.opencode/` from the sources listed above.
+The skill sources are fetched and built into an OMP plugin package in the store
+— see [Skills](#skills). Nothing is committed to this repo.
 
 ## Related
 
-- [juspay/skills](https://github.com/juspay/skills) — Shared AI agent skills (also usable via [APM](https://microsoft.github.io/apm/))
+- [juspay/skills](https://github.com/juspay/skills) — Shared AI agent skills; also an OMP / Claude Code plugin marketplace
 - [OpenCode Documentation](https://opencode.ai/docs/) — Full docs on usage, configuration, and providers
 - [OpenCode GitHub](https://github.com/anomalyco/opencode) — The upstream OpenCode project
 - [llm-agents.nix](https://github.com/numtide/llm-agents.nix) — The upstream Nix packaging that this flake builds on

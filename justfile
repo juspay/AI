@@ -1,5 +1,3 @@
-mod agent
-
 # List available targets
 default:
     @just --list

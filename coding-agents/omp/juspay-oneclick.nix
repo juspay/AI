@@ -1,9 +1,13 @@
-{ pkgs, lib, omp, skillsDir }:
+{ pkgs, lib, omp, skillsPlugin }:
 let
   wrapper = import ../wrapper.nix { inherit pkgs; };
   catalog = import ../catalog.nix;
   configFile = (pkgs.formats.yaml { }).generate "omp-config.yml" {
-    skills.customDirectories = [ skillsDir ];
+    # OMP's `omp-plugins` skill provider scans `skills/` next to every extension
+    # directory named here. That sibling scan is the whole mechanism — there is
+    # no manifest to declare, and `skills.customDirectories` is dead in the omp
+    # this flake ships. See coding-agents/omp/plugin.nix.
+    extensions = [ "${skillsPlugin}" ];
     # Without this OMP starts on its own first-available model; the roles are how
     # the catalog's recommendation reaches this agent.
     modelRoles = {
