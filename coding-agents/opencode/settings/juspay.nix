@@ -1,16 +1,21 @@
 let
   catalog = import ../../catalog.nix;
 
-  # Adapt the shared catalog (see coding-agents/catalog.nix) to opencode's
+  # Adapt the gateway snapshot (see coding-agents/catalog.nix) to opencode's
   # provider model schema. name = attr key; reasoningEffort is forwarded as
   # the OpenAI-compatible `reasoning_effort` request field —
   # @ai-sdk/openai-compatible maps the camelCase key to snake_case for us.
+  # `vision` is the gateway's answer; when it says nothing we keep offering
+  # image input, which is what opencode did before the snapshot existed.
   mkModel = name:
-    { context, output, reasoning ? false, reasoningEffort ? null, id ? null }:
+    { context, output, reasoning ? false, vision ? true, reasoningEffort ? null, id ? null }:
     let
       base = {
         inherit name;
-        modalities = { input = [ "text" "image" ]; output = [ "text" ]; };
+        modalities = {
+          input = if vision then [ "text" "image" ] else [ "text" ];
+          output = [ "text" ];
+        };
         limit = { inherit context output; };
       } // (if id == null then { } else { inherit id; });
     in

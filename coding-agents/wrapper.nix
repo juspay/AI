@@ -1,53 +1,57 @@
 # Shell bootstrap shared by every agent wrapper in this repo: the Juspay key
 # prompt and the throwaway per-run config directory the *-oneclick variants hand
 # their agent. Each helper renders a shell fragment; what is agent-specific —
-# which files the agent reads, which env var points at its config root — stays
-# at the call sites.
+# which files the agent reads, which env var points at its config root, which
+# name the agent expects the key under — stays at the call sites.
 { pkgs }:
 let
   inherit (pkgs) lib;
   catalog = import ./catalog.nix;
-  apiKeyEnv = catalog.apiKeyEnv;
-  # The shell word that expands to the key, for the places the shell itself has
-  # to do the expanding (`$JUSPAY_API_KEY`).
-  apiKeyRef = "$" + apiKeyEnv;
   gumBin = "${pkgs.gum}/bin/gum";
   mktempBin = "${pkgs.coreutils}/bin/mktemp";
   lnBin = "${pkgs.coreutils}/bin/ln";
 in
 {
-  # Ensures the gateway key is set, prompting interactively if missing. Always
-  # runs — we don't bypass based on args, so the user's positional parameters
-  # reach the agent untouched (the prior `case " $* "` bypass also incorrectly
-  # matched substrings like " -v " inside messages). Uses ${..:-} for nounset
-  # (set -u) compatibility.
-  ensureApiKey = ''
-    if [ -z "''${${apiKeyEnv}:-}" ]; then
-      cat >&2 <<'MSG'
+  # Ensures the gateway key is set, prompting interactively if missing. `env` is
+  # the name the calling agent expects it under: the catalog's by default, the
+  # agent's own convention where it has one (OMP reads LiteLLM keys as
+  # LITELLM_API_KEY). Always runs — we don't bypass based on args, so the user's
+  # positional parameters reach the agent untouched (the prior `case " $* "`
+  # bypass also incorrectly matched substrings like " -v " inside messages).
+  # The `:-` keeps it compatible with nounset (set -u).
+  ensureApiKey = { env ? catalog.apiKeyEnv }:
+    let
+      # The shell word that expands to that variable, for the one place the
+      # shell itself has to do the expanding.
+      ref = "$" + env;
+    in
+    ''
+      if [ -z "''${${env}:-}" ]; then
+        cat >&2 <<'MSG'
 
-  ${apiKeyEnv} is not set.
+  ${env} is not set.
 
   Create an API key at: ${catalog.apiKeyUrl}
   (Requires Juspay VPN to access the dashboard)
 
-  Tip: export ${apiKeyEnv}=... to skip this prompt next time.
+  Tip: export ${env}=... to skip this prompt next time.
 
 MSG
-      if [ ! -t 0 ]; then
-        echo "Error: cannot prompt for ${apiKeyEnv} (stdin is not a terminal)." >&2
-        exit 1
+        if [ ! -t 0 ]; then
+          echo "Error: cannot prompt for ${env} (stdin is not a terminal)." >&2
+          exit 1
+        fi
+        ${env}=$(${gumBin} input --password --prompt "${env}: ") || {
+          echo "Error: failed to read ${env}." >&2
+          exit 1
+        }
+        if [ -z "${ref}" ]; then
+          echo "Error: no API key provided." >&2
+          exit 1
+        fi
+        export ${env}
       fi
-      ${apiKeyEnv}=$(${gumBin} input --password --prompt "${apiKeyEnv}: ") || {
-        echo "Error: failed to read ${apiKeyEnv}." >&2
-        exit 1
-      }
-      if [ -z "${apiKeyRef}" ]; then
-        echo "Error: no API key provided." >&2
-        exit 1
-      fi
-      export ${apiKeyEnv}
-    fi
-  '';
+    '';
 
   # Give the agent a writable per-run directory holding the generated config it
   # should read, and point its own env var at it (`links` are symlinked; files

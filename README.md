@@ -2,7 +2,7 @@
 
 One-click coding agents with Juspay's LLM configuration.
 
-Supports **[OpenCode](https://opencode.ai/)**, **[pi](https://github.com/badlogic/pi-mono)**, and **[Oh My Pi (OMP)](https://github.com/can1357/oh-my-pi)**. Skills are sourced from:
+Supports **[OpenCode](https://opencode.ai/)** and **[Oh My Pi (OMP)](https://github.com/can1357/oh-my-pi)**. Skills are sourced from:
 
 - [juspay/skills](https://github.com/juspay/skills) — Shared AI agent skills
 - [anthropics/skills](https://github.com/anthropics/skills) — `frontend-design` skill
@@ -16,7 +16,7 @@ Supports **[OpenCode](https://opencode.ai/)**, **[pi](https://github.com/badlogi
 ## Prerequisites
 
 - **Nix** — Install via [the Nix installer](https://nixos.asia/en/install). New to Nix? See the [Nix First Steps](https://nixos.asia/en/nix-first) tutorial.
-- **`JUSPAY_API_KEY`** *(Juspay employees only)* — Create one at [grid.ai.juspay.net/dashboard](https://grid.ai.juspay.net/dashboard) (requires VPN to create, but **not** to use afterwards). Not needed for non-Juspay variants.
+- **Gateway API key** *(Juspay employees only)* — Create one at [grid.ai.juspay.net/dashboard](https://grid.ai.juspay.net/dashboard) (requires VPN to create, but **not** to use afterwards). The `*-juspay-*` variants read it as `JUSPAY_API_KEY`, except `omp-juspay-oneclick`, which reads `LITELLM_API_KEY` — the name OMP's own LiteLLM support uses. Each wrapper prompts for its own name if it is unset. Not needed for non-Juspay variants.
 
 ## Quick Start
 
@@ -35,26 +35,18 @@ This launches an interactive selector. Or run a specific variant directly:
 | `opencode-juspay-editable` | `nix run github:juspay/AI#opencode-juspay-editable` | Creates editable Juspay config at `~/.config/opencode/opencode.json` ([customize](https://opencode.ai/docs/config/)) |
 | `opencode` | `nix run github:juspay/AI#opencode` | Plain OpenCode, no config |
 
-**pi**
-
-| Variant | Command | Description |
-|---|---|---|
-| `pi-juspay-oneclick` | `nix run github:juspay/AI#pi-juspay-oneclick` | Juspay config and skills bundled |
-| `pi-juspay-editable` | `nix run github:juspay/AI#pi-juspay-editable` | Merges Juspay models into `~/.pi/models.json` ([customize](https://github.com/badlogic/pi-mono)) |
-| `pi` | `nix run github:juspay/AI#pi` | Plain pi, no config |
-
 **Oh My Pi**
 
 | Variant | Command | Description |
 |---|---|---|
-| `omp-juspay-oneclick` | `nix run github:juspay/AI#omp-juspay-oneclick` | Juspay models and skills bundled |
+| `omp-juspay-oneclick` | `nix run github:juspay/AI#omp-juspay-oneclick` | Juspay gateway and skills bundled |
 | `omp` | `nix run github:juspay/AI#omp` | Plain Oh My Pi, no config |
 
-The `*-juspay-*` variants need a `JUSPAY_API_KEY`. If the env var isn't set, the wrapper prompts for it interactively — handy on fresh VMs or containers. Export the var in your shell to skip the prompt on subsequent runs.
+The `*-juspay-*` variants need a gateway API key. Each wrapper prompts for it interactively if it isn't set — handy on fresh VMs or containers. Export the variable in your shell to skip the prompt on subsequent runs.
 
 ### Daily Updates
 
-This flake's `flake.lock` is **auto-updated daily** via CI, so you always get the latest OpenCode release and skills. If pinning via `flake.lock` in your own flake, run `nix flake update AI` to pull the latest.
+This flake's `flake.lock` is **auto-updated daily** via CI, so you always get the latest OpenCode release and skills. If pinning via `flake.lock` in your own flake, run `nix flake update AI` to pull the latest. The gateway model snapshot is not part of that — refresh it with `just refresh-gateway-models` when the gateway changes.
 
 ## Home Manager module (config only)
 
@@ -116,51 +108,57 @@ GLM-5.2 collapses low/medium into "high", so these are the only distinct levels:
 The tiers are defined in [`coding-agents/opencode/settings/juspay.nix`](coding-agents/opencode/settings/juspay.nix);
 all target the same gateway model (`glm-latest`) and differ only in `reasoningEffort`.
 
-### pi and the LiteLLM gateway
-
-pi (badlogic/pi-mono) supports arbitrary OpenAI-compatible endpoints via its
-`~/.pi/agent/models.json`. The `pi-juspay-*` variants generate this file from
-the same shared catalog as the OpenCode config, keeping model ids and limits
-in sync between the two agents.
-
-To use a model with pi:
-
-```bash
-# Interactive (prompts for JUSPAY_API_KEY if not set)
-nix run github:juspay/AI#pi-juspay-oneclick -- --model litellm/kimi-k3
-
-# With API key already exported: oneclick keeps pi's state off ~/.pi; the
-# editable variant instead merges Juspay into your existing ~/.pi/models.json
-nix run github:juspay/AI#pi-juspay-editable -- --model litellm/glm-latest
-```
-
-You can also select a reasoning-effort tier per session with pi's thinking
-suffix, e.g. `--model litellm/glm-latest:max` or `--model litellm/glm-latest,low,med,high`.
-
 ### Oh My Pi and the LiteLLM gateway
 
-OMP uses `models.yml` rather than pi's `models.json`. The `omp-juspay-*`
-variants generate the model list from the same shared Juspay catalog.
+OMP ships LiteLLM discovery, so `omp-juspay-oneclick` vendors no model list at
+all. The wrapper points OMP at the gateway, hands it the key under the name OMP
+expects, and OMP asks the gateway what it serves — ids, context windows,
+capabilities — at startup:
 
 ```bash
 nix run github:juspay/AI#omp-juspay-oneclick -- --model litellm/kimi-k3
 ```
 
-The variant uses a temporary `PI_CODING_AGENT_DIR` and loads the vendored
-skills through its `config.yml`. To use the gateway from an OMP setup you
-manage yourself, add the Juspay provider to your own models file using OMP's
-[model configuration documentation](https://github.com/can1357/oh-my-pi/blob/main/docs/models.md);
-the API key is referenced through `JUSPAY_API_KEY`, not written into the file.
+The variant also uses a temporary `PI_CODING_AGENT_DIR` and loads the vendored
+skills through its `config.yml`. What the picker shows is what your key can
+actually call, with the limits the gateway enforces. If you run OMP yourself
+rather than through the wrapper, those same two variables are all it needs:
+
+```bash
+export LITELLM_BASE_URL=https://grid.ai.juspay.net
+export LITELLM_API_KEY=...   # the gateway key
+omp
+```
+
+### Gateway model catalog
+
+opencode cannot discover a private OpenAI-compatible endpoint — its provider
+catalog is models.dev plus models declared in config — so it reads a snapshot of
+the gateway, generated from the gateway itself:
+
+```bash
+JUSPAY_API_KEY=... just refresh-gateway-models
+```
+
+That rewrites [`coding-agents/gateway-models.nix`](coding-agents/gateway-models.nix)
+(ids, context windows, capabilities, fewer hand-kept numbers to drift), prints
+the diff, and is a no-op when nothing changed. It needs a key the gateway lets
+read one of LiteLLM's model-info routes, and refuses to write a snapshot that
+would otherwise lose every capability flag. Availability is per key, so the
+snapshot reflects the key used to refresh it — `git log` on that file is its
+clock. The `opencode-juspay-editable` variant seeds its config once and then
+leaves it alone, so that copy is yours: delete it to pick up a newer snapshot.
 
 ## Coding Agent Setup
 
 This repo uses [APM](https://microsoft.github.io/apm/) for coding agent configuration. `.claude/` and `.opencode/` are **vendored** — committed to git and regenerated with `just agent::apm-vendor`.
 
 ```bash
-just agent                # launch agent (default: claude)
-just agent::apm-vendor    # regenerate vendored .claude/ and .opencode/
-just agent::update        # update apm deps to latest, then re-vendor
-just test                 # run the wrapper package tests (NixOS VMs, Linux only)
+just agent                      # launch agent (default: claude)
+just agent::apm-vendor          # regenerate vendored .claude/ and .opencode/
+just agent::update              # update apm deps to latest, then re-vendor
+just test                       # run the wrapper package tests (NixOS VMs, Linux only)
+just refresh-gateway-models     # refresh the gateway model snapshot (needs the key)
 ```
 
 Override the agent with `AI_AGENT`:
@@ -177,13 +175,13 @@ AI_AGENT='claude --dangerously-skip-permissions' just agent
 ├── .opencode/                # Vendored APM output for OpenCode
 ├── agent/                    # Justfile recipes for apm and agent launch
 ├── coding-agents/
-│   ├── catalog.nix           # Shared Juspay model catalog (opencode, pi, omp)
-│   ├── wrapper.nix           # Shared wrapper shell: key prompt, temp dir, config seeding
-│   ├── providers.nix         # Shared catalog → models-file provider block (pi, omp)
+│   ├── catalog.nix           # Gateway policy (URL, key name, recommendation)
+│   ├── gateway-models.nix    # GENERATED: what the gateway serves (for opencode)
+│   ├── refresh-gateway-models.py  # Regenerates the snapshot from the gateway
+│   ├── wrapper.nix           # Shared wrapper shell: key prompt, temp config dir
 │   ├── selector.nix          # `nix run` variant chooser (see flake.nix's frontDoor)
 │   ├── opencode/             # OpenCode packages, settings, home-module
-│   ├── omp/                  # Oh My Pi packages and models.yml generation
-│   ├── pi/                   # pi packages and models.json generation
+│   ├── omp/                  # Oh My Pi packages
 │   └── test/standalone/      # Wrapper package tests (NixOS VM flake)
 ├── demo/                     # Demo screencast infrastructure
 ```
