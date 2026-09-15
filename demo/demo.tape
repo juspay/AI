@@ -19,12 +19,29 @@ Set Shell "bash"
 Set FontFamily "JetBrains Mono"
 Set FontSize 22
 Set Width 1200
-Set Height 800
+# 920, not 800: at 800 the terminal is 25 rows, which omp's welcome screen fills
+# to the last row. Its rotating tip line is of random length, and a tip that
+# wraps to three lines pushes the input box past the bottom of the screen — the
+# recording then sits on the welcome screen, never sees a prompt, and times out.
+# The extra rows are the slack that keeps the input box on screen.
+Set Height 920
 Set TypingSpeed 50ms
 Set Theme "Catppuccin Mocha"
 Set Padding 20
 # The reply is an LLM round-trip; give the marker waits room (default is 15s).
 Set WaitTimeout 180s
+
+# Pin the pty to the grid vhs actually renders (1200x920 at font size 22 with
+# padding 20 is 28 rows of 81 columns). The size the shell inherits has come up
+# wrong — 80 columns against a wider screen — on some runs, and omp lays its
+# welcome screen out from that, which is the other way the input box ends up off
+# screen. `Hide` keeps the command out of the GIF; `clear` keeps its output out
+# of the frame.
+Hide
+Type "stty rows 28 cols 81; clear"
+Enter
+Sleep 1s
+Show
 
 # Type the run command. `nix run .` rather than `nix run github:juspay/AI` so the
 # recording shows *this* checkout — the published flake would be one release

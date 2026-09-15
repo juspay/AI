@@ -35,6 +35,18 @@ Enter
 Wait+Screen /ALFABRAVO/
 ```
 
+### Keeping omp's input box on screen
+
+omp's welcome screen is as tall as the terminal, and the rotating tip under it
+is of random length: a tip that wraps to three lines pushes the input box below
+the bottom of the screen, and the recording then waits out its timeout on a
+welcome screen that never accepts the prompt. Two settings keep that from
+happening: the tape asks for a 920px-tall terminal (28 rows rather than 25, so
+a long tip has room), and it pins the pty to the grid vhs renders
+(`stty rows 28 cols 81`, inside `Hide`/`Show` so neither the command nor its
+output reaches the GIF) — the size the shell inherits has come up as 80 columns
+against a wider screen on some runs, which throws omp's layout off the same way.
+
 ### Waiting for the input box, then settling
 
 The wrapper skips omp's setup wizard (`OMP_SKIP_SETUP=1`; it has already
