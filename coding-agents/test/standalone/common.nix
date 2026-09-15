@@ -33,33 +33,13 @@ let
         """The store-built skill directory the wrapper hands the agent.
 
         A file-level check, so it can only speak for agents that take a plain
-        directory of skills (opencode). For OMP, ask OMP — see loaded_skills.
+        directory of skills (opencode). For OMP, ask OMP — see loaded_skills in
+        test-omp-oneclick.nix.
         """
         machine.succeed(f"test -d {shlex.quote(skills_path)}")
         for skill in PROMISED_SKILLS:
             machine.succeed(f"test -f {shlex.quote(skills_path)}/{skill}/SKILL.md")
         print(f"✅ Skills bundled: {skills_path}")
-
-    def loaded_skills():
-        """The skills OMP itself reports having loaded.
-
-        Every other assertion in these tests reads a file *we* generate, which
-        means they all sit on this repo's clock. OMP sits on its own: it ships
-        daily through llm-agents -> flake.lock -> an auto-merged bump, and its
-        settings schema does move — `skills.customDirectories` -> `extensions:`
-        is exactly what this wiring changed to. OMP ignores an unrecognised
-        config key silently, so if a future release renames or narrows
-        `extensions:`, our config.yml still generates, still looks right, and
-        every user gets an agent with no skills at all.
-
-        This is the one check on OMP's side of that boundary. It drives a real
-        session over ACP and reads back the /skill:<name> command OMP registers
-        per *discovered* skill, so it answers "did OMP load these?" rather than
-        "did we write the files we think we wrote?". No network needed: skill
-        discovery happens before any model call.
-        """
-        out = machine.succeed("su - testuser -c omp-list-skills")
-        return set(out.split())
   '';
 
   # The body of an opencode *-oneclick test. Both flavours do the same three
