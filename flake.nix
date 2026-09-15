@@ -36,31 +36,19 @@
       packages = forAllSystems (system:
         let
           pkgs = pkgsFor system;
-          lib = pkgs.lib;
-          omp = pkgs.llm-agents.omp;
-          callOmp = path: lib.callPackageWith (pkgs // { inherit omp; }) (./coding-agents/omp + "/${path}");
           # The skills, built in the store as an OMP plugin package. OMP takes
           # the package itself, via `extensions:`.
-          skillsPlugin = callOmp "plugin.nix" { inherit juspay-skills anthropics-skills; };
-
-          # Every variant this flake packages, keyed by its attr name.
-          variant = {
-            inherit omp;
-            omp-juspay-oneclick = callOmp "juspay-oneclick.nix" { inherit skillsPlugin; };
+          skillsPlugin = pkgs.callPackage ./coding-agents/omp/plugin.nix {
+            inherit juspay-skills anthropics-skills;
           };
-
-          # What a bare `nix run` offers, in menu order. Each name must be a key
-          # of `variant` above — that lookup is the only link between this list
-          # and the packages it fronts.
-          frontDoor = [
-            { name = "omp-juspay-oneclick"; description = "Oh My Pi on the Juspay gateway, skills bundled"; }
-            { name = "omp"; description = "Plain Oh My Pi, no config"; }
-          ];
+          omp = pkgs.callPackage ./coding-agents/omp { inherit skillsPlugin; };
         in
-        variant // {
-          default = pkgs.callPackage ./coding-agents/selector.nix {
-            variants = map (v: v // { package = variant.${v.name}; }) frontDoor;
-          };
+        {
+          default = omp;
+          # The same derivation under the name users type: `nix run
+          # github:juspay/AI#omp`. There is only one package here, so this is an
+          # alias, not a variant.
+          inherit omp;
         }
       );
 

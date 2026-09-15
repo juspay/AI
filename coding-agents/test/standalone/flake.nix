@@ -17,7 +17,7 @@
     in
     {
       checks.${system} = {
-        omp-oneclick = mkTest ./test-omp-oneclick.nix;
+        omp = mkTest ./test-omp.nix;
       };
     };
 }

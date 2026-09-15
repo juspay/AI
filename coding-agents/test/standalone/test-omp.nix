@@ -3,12 +3,12 @@ let
   common = import ./common.nix;
 in
 {
-  name = "omp-oneclick";
+  name = "omp";
 
   nodes.machine = { pkgs, ... }: {
     imports = [ common.baseNode ];
     environment.systemPackages = [
-      ai.packages.${pkgs.stdenv.hostPlatform.system}.omp-juspay-oneclick
+      ai.packages.${pkgs.stdenv.hostPlatform.system}.default
 
       # Asks OMP which skills it loaded, by driving a real session over ACP and
       # reading the /skill:<name> command it registers per discovered skill.
