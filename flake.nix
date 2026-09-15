@@ -13,10 +13,9 @@
     # Skill sources. Not flakes — each is a plain tree we read `skills/` out of
     # when building the OMP plugin (coding-agents/omp/plugin.nix). These
     # replace the APM vendoring that used to commit copies into .claude/ and
-    # .opencode/.
-    # TODO: repoint to `github:juspay/skills` once juspay/skills#40 (which adds
-    # the plugin manifest and marketplace catalogs) merges.
-    juspay-skills = { url = "github:juspay/skills/omp-marketplace"; flake = false; };
+    # .opencode/. juspay/skills is itself an OMP marketplace and plugin (its
+    # package.json carries the manifest), so its tree is used as-is.
+    juspay-skills = { url = "github:juspay/skills"; flake = false; };
     anthropics-skills = { url = "github:anthropics/skills"; flake = false; };
     # kolu is deliberately *not* an input — its skill is export-ignored out of
     # every tree a flake fetcher can produce. plugin.nix fetches it directly and

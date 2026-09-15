@@ -74,16 +74,15 @@
     "juspay-skills": {
       "flake": false,
       "locked": {
-        "lastModified": 1789504417,
+        "lastModified": 1789505334,
         "narHash": "sha256-4SecqPwHvMFEn3nu+Ll2QGA/ZkKzxp9XBUylsu4aMFE=",
         "owner": "juspay",
         "repo": "skills",
-        "rev": "57cee60b53fe78e60b4f249968ae26505ecc444b",
+        "rev": "2d2fdd9c32dc4675b90a94671e581ec8a0fcc9f6",
         "type": "github"
       },
       "original": {
         "owner": "juspay",
-        "ref": "omp-marketplace",
         "repo": "skills",
         "type": "github"
       }
