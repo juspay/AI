@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "anthropics-skills": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789069448,
+        "narHash": "sha256-tI4bTTBfI1ylltklGyiyA7pLoKXEWtrT6lrmwrpLbCw=",
+        "owner": "anthropics",
+        "repo": "skills",
+        "rev": "34040c9c568585f6929bedeaad110ad08f079624",
+        "type": "github"
+      },
+      "original": {
+        "owner": "anthropics",
+        "repo": "skills",
+        "type": "github"
+      }
+    },
     "bun2nix": {
       "inputs": {
         "flake-parts": [
@@ -55,6 +71,23 @@
         "type": "github"
       }
     },
+    "juspay-skills": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789504417,
+        "narHash": "sha256-4SecqPwHvMFEn3nu+Ll2QGA/ZkKzxp9XBUylsu4aMFE=",
+        "owner": "juspay",
+        "repo": "skills",
+        "rev": "57cee60b53fe78e60b4f249968ae26505ecc444b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "juspay",
+        "ref": "omp-marketplace",
+        "repo": "skills",
+        "type": "github"
+      }
+    },
     "llm-agents": {
       "inputs": {
         "bun2nix": "bun2nix",
@@ -95,6 +128,8 @@
     },
     "root": {
       "inputs": {
+        "anthropics-skills": "anthropics-skills",
+        "juspay-skills": "juspay-skills",
         "llm-agents": "llm-agents",
         "nixpkgs": [
           "llm-agents",

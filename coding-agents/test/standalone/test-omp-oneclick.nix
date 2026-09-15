@@ -36,10 +36,16 @@ in
     config = machine.succeed(f"cat {agent_dir}/config.yml")
     if "default: litellm/glm-latest" not in config:
         raise Exception("config.yml does not carry the catalog's default model")
-    skills = re.search(r"customDirectories:\s*\n\s*-\s*(\S+)", config)
-    if skills is None:
-        raise Exception("config.yml does not point at the vendored skills")
-    check_skills(skills.group(1))
-    print(f"✅ omp gets the catalog at runtime, roles and skills via {agent_dir}")
+
+    # Skills arrive as an OMP plugin package listed under `extensions:` — no
+    # `customDirectories`, and nothing vendored into this repo. The old key
+    # must be gone, or a stale wiring would pass this test unnoticed.
+    if "customDirectories" in config:
+        raise Exception("config.yml still uses skills.customDirectories")
+    plugin = re.search(r"extensions:\s*\n\s*-\s*(\S+)", config)
+    if plugin is None:
+        raise Exception("config.yml does not list the skills plugin under extensions")
+    check_skills_plugin(plugin.group(1))
+    print(f"✅ omp gets the catalog at runtime, roles and the skills plugin via {agent_dir}")
   '';
 }
