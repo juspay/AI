@@ -151,9 +151,9 @@ leaves it alone, so that copy is yours: delete it to pick up a newer snapshot.
 
 ## Skills
 
-The skills listed at the top are **not vendored into this repo**. Each source is
-a flake input, and [`coding-agents/omp/plugin.nix`](coding-agents/omp/plugin.nix)
-composes them in the Nix store into a single Oh My Pi **plugin package**:
+The skills listed at the top are **not vendored into this repo**.
+[`coding-agents/omp/plugin.nix`](coding-agents/omp/plugin.nix) composes them in
+the Nix store into a single Oh My Pi **plugin package**:
 
 ```
 /nix/store/...-omp-juspay-skills-plugin/
@@ -172,7 +172,12 @@ discovers `skills/<name>/SKILL.md` next to it.
 opencode has no plugin notion, so the `opencode-*-oneclick` variants are handed
 the package's `skills/` subdirectory directly. One build, two consumers.
 
-`nix flake update` picks up new skills; there is nothing to re-vendor.
+`nix flake update` picks up new skills; there is nothing to re-vendor — with
+one exception. juspay/skills and anthropics/skills are flake inputs, so they
+follow the lock. **kolu is pinned by hand** inside `plugin.nix`: its `SKILL.md`
+lives under a path kolu marks `export-ignore`, which every Nix flake fetcher
+honours, so no flake input can see it. Bumping it means editing the `rev` and
+`hash` there.
 
 To get the same skills in your own agent without this flake, install them from
 the marketplace instead — see
@@ -206,8 +211,8 @@ just demo                       # re-record the demo screencast
 ├── demo/                     # Demo screencast infrastructure
 ```
 
-The skill sources are flake inputs, built into an OMP plugin package in the
-store — see [Skills](#skills). Nothing is committed to this repo.
+The skill sources are fetched and built into an OMP plugin package in the store
+— see [Skills](#skills). Nothing is committed to this repo.
 
 ## Related
 
