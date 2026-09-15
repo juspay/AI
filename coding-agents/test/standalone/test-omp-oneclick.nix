@@ -9,13 +9,30 @@ in
     imports = [ common.baseNode ];
     environment.systemPackages = [
       ai.packages.${pkgs.stdenv.hostPlatform.system}.omp-juspay-oneclick
+
+      # Asks OMP which skills it loaded, by driving a real session over ACP and
+      # reading the /skill:<name> command it registers per discovered skill.
+      # Lives here rather than inline in the test script because it has to reach
+      # OMP through the wrapper — the wrapper is what writes the config.yml
+      # under test, so anything that bypasses it proves nothing.
+      (pkgs.writeShellScriptBin "omp-list-skills" ''
+        set -u
+        cd "$(mktemp -d)"
+        {
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1,"clientCapabilities":{"fs":{"readTextFile":false,"writeTextFile":false}}}}'
+          sleep 3
+          printf '%s\n' "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"session/new\",\"params\":{\"cwd\":\"$PWD\",\"mcpServers\":[]}}"
+          sleep 10
+        } | timeout 40 omp acp 2>/dev/null \
+          | grep -o '"name":"skill:[^"]*"' | sed 's/.*skill://;s/"$//' | sort -u
+      '')
     ];
     environment.variables.LITELLM_API_KEY = "test-api-key";
   };
 
   testScript = ''
     ${common.testPreamble}
-    ${common.probe { }}
+    ${common.probe}
 
     version = machine.succeed("su - testuser -c 'omp --version'")
     print(f"omp version: {version}")
@@ -37,15 +54,21 @@ in
     if "default: litellm/glm-latest" not in config:
         raise Exception("config.yml does not carry the catalog's default model")
 
-    # Skills arrive as an OMP plugin package listed under `extensions:` — no
-    # `customDirectories`, and nothing vendored into this repo. The old key
-    # must be gone, or a stale wiring would pass this test unnoticed.
+    # Skills reach omp as a plugin package listed under `extensions:`, not as a
+    # bare `skills.customDirectories`. The old key must be gone, or stale wiring
+    # would survive here unnoticed.
     if "customDirectories" in config:
         raise Exception("config.yml still uses skills.customDirectories")
-    plugin = re.search(r"extensions:\s*\n\s*-\s*(\S+)", config)
-    if plugin is None:
+    if not re.search(r"extensions:\s*\n\s*-\s*(\S+)", config):
         raise Exception("config.yml does not list the skills plugin under extensions")
-    check_skills_plugin(plugin.group(1))
     print(f"✅ omp gets the catalog at runtime, roles and the skills plugin via {agent_dir}")
+
+    # The assertion that matters, and the only one on omp's side of the wiring:
+    # what did omp actually load? Everything above reads a file we generated.
+    skills = loaded_skills()
+    missing = [s for s in PROMISED_SKILLS if s not in skills]
+    if missing:
+        raise Exception(f"omp did not load {missing} via extensions: (loaded {sorted(skills)})")
+    print(f"✅ omp loaded {len(skills)} skills through extensions:, including {PROMISED_SKILLS}")
   '';
 }

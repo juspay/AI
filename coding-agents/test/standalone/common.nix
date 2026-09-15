@@ -2,14 +2,14 @@
 # exercised through the agent it fronts, so what is shared here is the machine
 # setup and the python that reads a wrapper's shell source.
 let
-  inherit (builtins) concatStringsSep lessThan map sort;
+  # The python every wrapper test starts with: the helpers below, and the two
+  # stdlib modules those helpers reference. A script needing more imports it
+  # itself — the test driver lints for unused imports, so a shared pool would
+  # make one script's imports another script's problem.
+  probe = ''
+    import re
+    import shlex
 
-  # The python every wrapper test starts with. `imports` adds the stdlib modules
-  # the calling script itself needs, on top of the ones these helpers use (`json`
-  # among them, since check_skills_plugin parses the plugin manifest) — each
-  # script then imports exactly what it references.
-  probe = { imports ? [ ] }: ''
-    ${concatStringsSep "" (map (module: "import ${module}\n") (sort lessThan ([ "json" "re" "shlex" ] ++ imports)))}
     def wrapper_script(agent):
         """Shell source of the installed wrapper for `agent`."""
         return machine.succeed(f"cat $(which {agent})")
@@ -21,38 +21,54 @@ let
             raise Exception(f"wrapper does not link {link_name}")
         return match.group(1)
 
+    # The skills this flake promises its users. Not a sample: each name is a
+    # contract, and one per composed source, so that a source dropping out
+    # upstream fails the build instead of silently shipping a smaller agent.
+    # juspay/skills has already lost a skill this way once (`nix-flake`), and it
+    # now arrives through an unattended nightly lock bump, so nothing else would
+    # catch it. Add a name here only if you mean to promise it.
+    PROMISED_SKILLS = ["nix-haskell", "frontend-design", "kolu"]
+
     def check_skills(skills_path):
         """The store-built skill directory the wrapper hands the agent.
 
-        One skill per composed source: nix-haskell from juspay/skills,
-        frontend-design from anthropics/skills, kolu from juspay/kolu. OMP
-        discovers these one level down and non-recursively, so the SKILL.md
-        must sit exactly here.
+        A file-level check, so it can only speak for agents that take a plain
+        directory of skills (opencode). For OMP, ask OMP — see loaded_skills.
         """
         machine.succeed(f"test -d {shlex.quote(skills_path)}")
-        for skill in ["nix-haskell", "frontend-design", "kolu"]:
+        for skill in PROMISED_SKILLS:
             machine.succeed(f"test -f {shlex.quote(skills_path)}/{skill}/SKILL.md")
         print(f"✅ Skills bundled: {skills_path}")
 
-    def check_skills_plugin(plugin_path):
-        """The OMP *plugin* package: a manifest next to the skills it declares.
+    def loaded_skills():
+        """The skills OMP itself reports having loaded.
 
-        Without the manifest OMP's loader skips the package outright, so the
-        skills would silently not load — assert on it, not just on the skills.
+        Every other assertion in these tests reads a file *we* generate, which
+        means they all sit on this repo's clock. OMP sits on its own: it ships
+        daily through llm-agents -> flake.lock -> an auto-merged bump, and its
+        settings schema does move — `skills.customDirectories` -> `extensions:`
+        is exactly what this wiring changed to. OMP ignores an unrecognised
+        config key silently, so if a future release renames or narrows
+        `extensions:`, our config.yml still generates, still looks right, and
+        every user gets an agent with no skills at all.
+
+        This is the one check on OMP's side of that boundary. It drives a real
+        session over ACP and reads back the /skill:<name> command OMP registers
+        per *discovered* skill, so it answers "did OMP load these?" rather than
+        "did we write the files we think we wrote?". No network needed: skill
+        discovery happens before any model call.
         """
-        machine.succeed(f"test -f {shlex.quote(plugin_path)}/package.json")
-        manifest = json.loads(machine.succeed(f"cat {shlex.quote(plugin_path)}/package.json"))
-        if manifest.get("omp", {}).get("skills") != "./skills":
-            raise Exception(f"plugin manifest does not declare skills: {manifest}")
-        check_skills(f"{plugin_path}/skills")
-        print(f"✅ OMP plugin package: {plugin_path}")
+        out = machine.succeed("su - testuser -c omp-list-skills")
+        return set(out.split())
   '';
 
   # The body of an opencode *-oneclick test. Both flavours do the same three
   # things — point OPENCODE_CONFIG_DIR at a temp dir, link the generated config
-  # and the vendored skills into it, run opencode — and differ only in whether
+  # and the store-built skills into it, run opencode — and differ only in whether
   # that config is expected to carry the Juspay provider.
-  opencodeOneclick = { expectJuspay }: probe { } + ''
+  opencodeOneclick = { expectJuspay }: probe + ''
+    import json
+
     expect_juspay = ${if expectJuspay then "True" else "False"}
 
     version = machine.succeed("su - testuser -c 'opencode --version'")
