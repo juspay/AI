@@ -31,9 +31,11 @@ let
   models = builtins.mapAttrs mkModel (catalog.models // effortTiers);
 in
 {
-  model = "litellm/glm-latest";
-  small_model = "litellm/open-fast";
-  agent.explore = { mode = "subagent"; model = "litellm/open-fast"; };
+  # The catalog's recommended models, so a rename there cannot leave these
+  # pointing at a model that no longer exists.
+  model = "litellm/${catalog.defaultModel}";
+  small_model = "litellm/${catalog.smallModel}";
+  agent.explore = { mode = "subagent"; model = "litellm/${catalog.smallModel}"; };
   provider.litellm = {
     npm = "@ai-sdk/openai-compatible";
     name = "Juspay";

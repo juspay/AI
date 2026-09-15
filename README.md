@@ -48,7 +48,6 @@ This launches an interactive selector. Or run a specific variant directly:
 | Variant | Command | Description |
 |---|---|---|
 | `omp-juspay-oneclick` | `nix run github:juspay/AI#omp-juspay-oneclick` | Juspay models and skills bundled |
-| `omp-juspay-editable` | `nix run github:juspay/AI#omp-juspay-editable` | Initializes editable Juspay models at `~/.omp/agent/models.yml`, preserving existing configuration |
 | `omp` | `nix run github:juspay/AI#omp` | Plain Oh My Pi, no config |
 
 The `*-juspay-*` variants need a `JUSPAY_API_KEY`. If the env var isn't set, the wrapper prompts for it interactively — handy on fresh VMs or containers. Export the var in your shell to skip the prompt on subsequent runs.
@@ -145,26 +144,23 @@ variants generate the model list from the same shared Juspay catalog.
 
 ```bash
 nix run github:juspay/AI#omp-juspay-oneclick -- --model litellm/kimi-k3
-nix run github:juspay/AI#omp-juspay-editable -- --model litellm/glm-latest --thinking high
 ```
 
-The one-click variant uses a temporary `PI_CODING_AGENT_DIR` and loads the
-vendored skills through its `config.yml`. The editable variant asks `omp config path`
-for the agent directory (normally `~/.omp/agent`), honoring environment-based
-directory and profile overrides. It only creates `models.yml` if no
-`models.yml`, `models.yaml`, or legacy `models.json` exists; existing model
-configuration is never overwritten. If you already have a models file, add
-the Juspay provider there using OMP's [model configuration documentation](https://github.com/can1357/oh-my-pi/blob/main/docs/models.md).
-The API key is referenced through `JUSPAY_API_KEY`, not written into the file.
+The variant uses a temporary `PI_CODING_AGENT_DIR` and loads the vendored
+skills through its `config.yml`. To use the gateway from an OMP setup you
+manage yourself, add the Juspay provider to your own models file using OMP's
+[model configuration documentation](https://github.com/can1357/oh-my-pi/blob/main/docs/models.md);
+the API key is referenced through `JUSPAY_API_KEY`, not written into the file.
 
 ## Coding Agent Setup
 
-This repo uses [APM](https://microsoft.github.io/apm/) for coding agent configuration. `.claude/` and `.opencode/` are **vendored** — committed to git and kept in sync by a CI check (`apm-sync` workflow).
+This repo uses [APM](https://microsoft.github.io/apm/) for coding agent configuration. `.claude/` and `.opencode/` are **vendored** — committed to git and regenerated with `just agent::apm-vendor`.
 
 ```bash
 just agent                # launch agent (default: claude)
 just agent::apm-vendor    # regenerate vendored .claude/ and .opencode/
 just agent::update        # update apm deps to latest, then re-vendor
+just test                 # run the wrapper package tests (NixOS VMs, Linux only)
 ```
 
 Override the agent with `AI_AGENT`:
@@ -182,9 +178,13 @@ AI_AGENT='claude --dangerously-skip-permissions' just agent
 ├── agent/                    # Justfile recipes for apm and agent launch
 ├── coding-agents/
 │   ├── catalog.nix           # Shared Juspay model catalog (opencode, pi, omp)
-│   ├── opencode/             # OpenCode packages, settings, home-module, tests
+│   ├── wrapper.nix           # Shared wrapper shell: key prompt, temp dir, config seeding
+│   ├── providers.nix         # Shared catalog → models-file provider block (pi, omp)
+│   ├── selector.nix          # `nix run` variant chooser (see flake.nix's frontDoor)
+│   ├── opencode/             # OpenCode packages, settings, home-module
 │   ├── omp/                  # Oh My Pi packages and models.yml generation
-│   └── pi/                   # pi packages and models.json generation
+│   ├── pi/                   # pi packages and models.json generation
+│   └── test/standalone/      # Wrapper package tests (NixOS VM flake)
 ├── demo/                     # Demo screencast infrastructure
 ```
 

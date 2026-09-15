@@ -16,18 +16,20 @@ Set Height 800
 Set TypingSpeed 50ms
 Set Theme "Catppuccin Mocha"
 Set Padding 20
+# The reply is an LLM round-trip; give the marker waits room (default is 15s).
+Set WaitTimeout 120s
 
 # Type the run command
-Type "nix run github:juspay/oc"
+Type "nix run github:juspay/AI"
 Sleep 500ms
 Enter
 
 # Wait for the gum choose variant selector
-Wait+Screen /Choose OpenCode variant/
+Wait+Screen /Choose a coding agent variant/
 
-Sleep 1s
-
-# "oneclick" is the first option, so just press Enter
+# The first option is the Juspay one-click variant, so just press Enter. Hold the
+# menu on screen for a beat so the recording captures it.
+Sleep 3s
 Enter
 
 # Wait for OpenCode TUI to load

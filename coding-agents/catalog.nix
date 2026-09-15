@@ -8,16 +8,14 @@
 #   output    - max output tokens
 #   reasoning - whether the model reasons by default (optional)
 let
+  gatewayUrl = "https://grid.ai.juspay.net";
+
   # GLM-5.2 shares a 1M-token context window (the old 202752 was a copy-paste
   # default). output stays at 32000: custom-provider clients cap the wire
   # max_tokens at 32000 for this model regardless of this field (verified
   # with opencode), so a higher value would only shrink the usable input
   # budget without raising the real output limit.
   glmLimits = { context = 1000000; output = 32000; };
-in
-{
-  gatewayUrl = "https://grid.ai.juspay.net";
-  apiKeyEnv = "JUSPAY_API_KEY";
 
   # All models accept text+image input and produce text output.
   #
@@ -41,4 +39,24 @@ in
     kimi-latest             = { context = 262000;  output = 32000; };
     kimi-k3                 = { context = 256000;  output = 32000; };
   };
+
+  # A recommended model must be one of the models above, so renaming or retiring
+  # one cannot leave a dangling default in an agent's config.
+  requireModel = name:
+    if builtins.hasAttr name models
+    then name
+    else throw "catalog: '${name}' is not a model in this catalog";
+in
+{
+  inherit gatewayUrl models;
+
+  apiKeyEnv = "JUSPAY_API_KEY";
+
+  # Where the wrappers' prompt sends users to create that key.
+  apiKeyUrl = "${gatewayUrl}/dashboard";
+
+  # The models an agent starts on. opencode's config sets both; pi and omp take
+  # a model per session (`--model litellm/<id>`).
+  defaultModel = requireModel "glm-latest";
+  smallModel = requireModel "open-fast";
 }
