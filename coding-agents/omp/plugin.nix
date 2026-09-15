@@ -17,7 +17,7 @@
 # and scanned non-recursively. juspay/skills already ships that layout at its
 # root, so its skills are copied wholesale; the other two sources contribute one
 # skill directory each.
-{ lib, runCommand, writeText, fetchgit, juspay-skills, anthropics-skills }:
+{ runCommand, writeText, fetchgit, juspay-skills, anthropics-skills }:
 let
   # kolu is fetched here rather than declared as a flake input, and that is not
   # a style choice. juspay/kolu's .gitattributes marks `/agents`, `/.agents` and
@@ -31,16 +31,19 @@ let
   # export-ignore, and a sparse checkout keeps that from dragging in kolu's
   # ~44MB monorepo. The cost is that this pin is manual: `nix flake update`
   # cannot bump it. To update, change `rev`, set `hash` to
-  # lib.fakeHash, and take the hash the build reports.
+  # the all-zeroes sha256, and take the hash the build reports.
   #
   # The real fix is upstream — kolu publishing its skill at a path that is not
   # export-ignored, or shipping its own marketplace catalog the way
   # juspay/skills now does. Until then, this is pinned.
+  # Where the skill sits inside kolu. Named once because the comment above
+  # expects it to move: the upstream fix *is* kolu republishing it elsewhere.
+  koluSkillPath = "agents/.apm/skills/kolu";
   kolu = fetchgit {
     url = "https://github.com/juspay/kolu";
     rev = "1089497577045c7907006e3286e1215d8548b8ce";
     hash = "sha256-TssN2l3kDy8h61oj125dFqpcQm+EvhF8AHPQ/W3atfw=";
-    sparseCheckout = [ "agents/.apm/skills/kolu" ];
+    sparseCheckout = [ koluSkillPath ];
   };
 
   manifest = writeText "package.json" (builtins.toJSON {
@@ -57,7 +60,7 @@ runCommand "omp-juspay-skills-plugin" { } ''
   mkdir -p "$out/skills"
   cp -r ${juspay-skills}/skills/. "$out/skills/"
   cp -r ${anthropics-skills}/skills/frontend-design "$out/skills/"
-  cp -r ${kolu}/agents/.apm/skills/kolu "$out/skills/"
+  cp -r ${kolu}/${koluSkillPath} "$out/skills/"
   chmod -R u+w "$out/skills"
   cp ${manifest} "$out/package.json"
 
