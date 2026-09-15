@@ -1,23 +1,28 @@
-# The skill bundle this flake hands its agents, built as an Oh My Pi *plugin*
-# package in the store — no vendored copy in the repo.
+# The skill bundle this flake hands its agents, composed in the store — no
+# vendored copy in the repo. The omp wrapper names this directory under
+# `extensions:` (see coding-agents/omp/juspay-oneclick.nix); opencode is handed
+# its `skills/` subdirectory.
 #
-# A plugin is an npm-style package directory: a `package.json` carrying an `omp`
-# manifest object, next to the content that manifest points at. OMP's runtime
-# skips packages without that manifest, so the manifest is what turns a
-# directory of skills into something `extensions:` will load (see
-# coding-agents/omp/juspay-oneclick.nix).
+# The whole contract is the layout: OMP scans `<root>/skills/<name>/SKILL.md`,
+# exactly one level deep and non-recursively. `skills` is hardcoded in OMP, not
+# read from anywhere, so that directory name is the one thing here that must not
+# change. juspay/skills already ships that layout at its root, so its skills are
+# copied wholesale; the other two sources contribute one skill directory each.
 #
-# The manifest is written fresh here rather than reused from juspay/skills'
-# own: this is a *composite* — juspay's skills plus `frontend-design` from
-# anthropics/skills and `kolu` from juspay/kolu — so it is a different package
-# than any single input, and borrowing an input's name and version would
-# misdescribe what is in the tree.
-#
-# Layout OMP requires: `<root>/skills/<name>/SKILL.md`, exactly one level deep
-# and scanned non-recursively. juspay/skills already ships that layout at its
-# root, so its skills are copied wholesale; the other two sources contribute one
-# skill directory each.
-{ runCommand, writeText, fetchgit, juspay-skills, anthropics-skills }:
+# Deliberately NOT written here: a `package.json` with an `omp` manifest. It
+# reads like it should be required — OMP's docs describe plugins that way — but
+# that requirement belongs to the *installed-plugin* path (`omp plugin install`,
+# `~/.omp/plugins/node_modules`), not to `extensions:`. Measured against the omp
+# this flake ships, an `extensions:` directory loads its skills identically with
+# no package.json at all, with a manifest pointing at a directory that does not
+# exist, and with a correct one; and a manifest pointing at real content in a
+# directory *not* named `skills` loads nothing. Provider precedence against a
+# colliding project skill is unchanged too. So a manifest here would be inert
+# code carrying a frozen `version` beside content that changes nightly. If a
+# future OMP does start requiring it, the ACP check in
+# coding-agents/test/standalone/test-omp-oneclick.nix goes red before the
+# nightly lock bump can merge.
+{ runCommand, fetchgit, juspay-skills, anthropics-skills }:
 let
   # kolu is fetched here rather than declared as a flake input, and that is not
   # a style choice. juspay/kolu's .gitattributes marks `/agents`, `/.agents` and
@@ -45,16 +50,6 @@ let
     hash = "sha256-TssN2l3kDy8h61oj125dFqpcQm+EvhF8AHPQ/W3atfw=";
     sparseCheckout = [ koluSkillPath ];
   };
-
-  manifest = writeText "package.json" (builtins.toJSON {
-    name = "juspay-ai-skills";
-    version = "1.0.0";
-    description = "Skill bundle for the one-click coding agents in juspay/AI";
-    license = "MIT";
-    # Not published to npm; the store path is the only distribution channel.
-    private = true;
-    omp.skills = "./skills";
-  });
 in
 runCommand "omp-juspay-skills-plugin" { } ''
   mkdir -p "$out/skills"
@@ -62,7 +57,6 @@ runCommand "omp-juspay-skills-plugin" { } ''
   cp -r ${anthropics-skills}/skills/frontend-design "$out/skills/"
   cp -r ${kolu}/${koluSkillPath} "$out/skills/"
   chmod -R u+w "$out/skills"
-  cp ${manifest} "$out/package.json"
 
   # A skill OMP cannot see is a silent no-op, so fail the build instead: every
   # skill directory must carry the SKILL.md the loader looks for, at exactly the

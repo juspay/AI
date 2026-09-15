@@ -153,24 +153,23 @@ leaves it alone, so that copy is yours: delete it to pick up a newer snapshot.
 
 The skills listed at the top are **not vendored into this repo**.
 [`coding-agents/omp/plugin.nix`](coding-agents/omp/plugin.nix) composes them in
-the Nix store into a single Oh My Pi **plugin package**:
+the Nix store into one directory that Oh My Pi loads as an **extension**:
 
 ```
 /nix/store/...-omp-juspay-skills-plugin/
-├── package.json          # the `omp` manifest: { "omp": { "skills": "./skills" } }
 └── skills/
     ├── nix-haskell/SKILL.md      # …and the rest of juspay/skills
     ├── frontend-design/SKILL.md  # anthropics/skills
     └── kolu/SKILL.md             # juspay/kolu
 ```
 
-The manifest is the point: OMP's loader skips any package that lacks one, and
-with it the package can be named under `extensions:` in `config.yml` — which is
-exactly what `omp-juspay-oneclick` does. OMP's `omp-plugins` skill provider then
-discovers `skills/<name>/SKILL.md` next to it.
+The layout is the whole contract. `omp-juspay-oneclick` names that directory
+under `extensions:` in its generated `config.yml`, and OMP's `omp-plugins` skill
+provider scans `skills/<name>/SKILL.md` beside it — one level deep,
+non-recursively, with `skills` hardcoded in OMP.
 
-opencode has no plugin notion, so the `opencode-*-oneclick` variants are handed
-the package's `skills/` subdirectory directly. One build, two consumers.
+opencode has no notion of extensions, so the `opencode-*-oneclick` variants are
+handed the `skills/` subdirectory directly. One build, two consumers.
 
 `nix flake update` picks up new skills; there is nothing to re-vendor — with
 one exception. juspay/skills and anthropics/skills are flake inputs, so they

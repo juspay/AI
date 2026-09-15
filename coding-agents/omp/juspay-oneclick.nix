@@ -3,10 +3,10 @@ let
   wrapper = import ../wrapper.nix { inherit pkgs; };
   catalog = import ../catalog.nix;
   configFile = (pkgs.formats.yaml { }).generate "omp-config.yml" {
-    # The skills reach OMP as a plugin package, not as a bare directory: OMP's
-    # `omp-plugins` skill provider scans `skills/` next to every extension
-    # package named here, and the package's manifest is what marks it as one.
-    # See coding-agents/omp/plugin.nix.
+    # OMP's `omp-plugins` skill provider scans `skills/` next to every extension
+    # directory named here. That sibling scan is the whole mechanism — there is
+    # no manifest to declare, and `skills.customDirectories` is dead in the omp
+    # this flake ships. See coding-agents/omp/plugin.nix.
     extensions = [ "${skillsPlugin}" ];
     # Without this OMP starts on its own first-available model; the roles are how
     # the catalog's recommendation reaches this agent.
