@@ -5,7 +5,7 @@ in
 pkgs.writeShellApplication {
   name = "opencode";
   text = ''
-    ${wrapper.ensureApiKey}
+    ${wrapper.ensureApiKey { }}
     ${wrapper.mkTempAgentDir {
       envVar = "OPENCODE_CONFIG_DIR";
       prefix = "opencode-config";
