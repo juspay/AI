@@ -1,6 +1,6 @@
 # Oh My Pi demo
-# Records a screencast of `nix run .` → first-run setup → a hello-world prompt
-# answered by the Juspay gateway's default model.
+# Records a screencast of `nix run .` → a hello-world prompt answered by the
+# Juspay gateway's default model.
 #
 # Usage (from the repo root):
 #   export LITELLM_API_KEY=your-gateway-key
@@ -14,6 +14,9 @@ Output demo.gif
 Require nix
 
 Set Shell "bash"
+# Provided through fontconfig by demo/flake.nix; the recording machines have no
+# monospace font of their own.
+Set FontFamily "JetBrains Mono"
 Set FontSize 22
 Set Width 1200
 Set Height 800
@@ -30,31 +33,16 @@ Type "nix run ."
 Sleep 500ms
 Enter
 
-# The wrapper hands omp a fresh agent directory every run, so every run starts
-# in omp's five-step setup wizard. Esc skips a step; none of it is needed here,
-# since the wrapper already points omp at the gateway. Each Escape waits for the
-# step it is answering, so the tape cannot get ahead of the TUI.
-Wait+Screen /Setup step 1 of 5/
-Sleep 2s
-Escape
-Wait+Screen /Setup step 2 of 5/
-Sleep 1s
-Escape
-Wait+Screen /Setup step 3 of 5/
-Sleep 1s
-Escape
-Wait+Screen /Setup step 4 of 5/
-Sleep 1s
-Escape
-Wait+Screen /Setup step 5 of 5/
-Sleep 1s
-Escape
-
-# The status line carries the model omp resolved for the `default` role — a
-# gateway id, discovered at startup rather than vendored — so it doubles as the
-# "we are on the Juspay gateway" marker.
+# The wrapper skips omp's setup wizard (it has already answered everything the
+# wizard asks), so the welcome screen is the first thing up. Its status line
+# carries the model omp resolved for the `default` role — a gateway id,
+# discovered at startup rather than vendored — so it doubles as the "we are on
+# the Juspay gateway" marker.
 Wait+Screen /glm-latest/
-Sleep 3s
+# omp checks for updates in the background after the welcome screen and redraws
+# when the "Update Available" banner lands; keystrokes typed across that redraw
+# were lost on a recording machine. Let it settle before typing.
+Sleep 8s
 
 # A hello-world prompt that needs no tools, so nothing stops for an approval.
 # Trick: ask the LLM to concatenate two words (ALFA+BRAVO) and print the result.

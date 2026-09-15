@@ -16,6 +16,11 @@
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
       demoDeps = [ vhs-nixpkgs.legacyPackages.${system}.vhs pkgs.bc ];
+      # vhs renders through its bundled chromium, which takes fonts from
+      # fontconfig. The recording machines (kolu-ci-*) ship a single
+      # proportional font, so without this the terminal comes out with
+      # letter-spaced text. The tape selects this family by name.
+      fontsConf = pkgs.makeFontsConf { fontDirectories = [ pkgs.jetbrains-mono ]; };
     in
     {
       apps.${system}.default = {
@@ -38,7 +43,7 @@
               esac
             done < "$tape"
             echo "Recording demo from $tape..."
-            vhs "$tape"
+            FONTCONFIG_FILE=${fontsConf} vhs "$tape"
             # vhs can exit 0 having written nothing — seen with vhs 0.12.0,
             # which runs the whole tape, prints "Creating <file>…" and produces
             # no file. Fail here rather than three lines later in `just demo`.

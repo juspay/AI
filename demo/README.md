@@ -1,6 +1,6 @@
 # Demo Screencast
 
-Records a GIF of `nix run .` → omp's first-run setup → a hello-world prompt answered by the Juspay gateway, using [VHS](https://github.com/charmbracelet/vhs).
+Records a GIF of `nix run .` → a hello-world prompt answered by the Juspay gateway, using [VHS](https://github.com/charmbracelet/vhs).
 
 ## Usage
 
@@ -35,14 +35,21 @@ Enter
 Wait+Screen /ALFABRAVO/
 ```
 
-### The first-run setup wizard
+### Settling before typing
 
-The wrapper gives omp a fresh `PI_CODING_AGENT_DIR` on every run, so every run is
-a first run: omp opens its five-step setup wizard before the prompt. The tape
-skips it with `Escape`, but never on a timer — each `Escape` is preceded by
-`Wait+Screen /Setup step N of 5/`, so a slower machine delays the tape instead of
-desynchronising it. Recording without those waits is how keystrokes end up typed
-into a provider login form.
+The wrapper skips omp's setup wizard (`OMP_SKIP_SETUP=1`; it has already
+configured provider, key and model), so the welcome screen is the first thing
+up and `Wait+Screen /glm-latest/` is the readiness marker. omp then checks for
+updates in the background and redraws when the "Update Available" banner lands;
+keystrokes typed across that redraw were lost on a recording machine, so the
+tape sleeps a few seconds after the marker before typing the prompt.
+
+### Fonts
+
+vhs renders through its bundled chromium, which takes fonts from fontconfig.
+The recording machines ship a single proportional font, so the demo flake
+points `FONTCONFIG_FILE` at a JetBrains Mono fontconfig and the tape selects
+that family.
 
 ## Editing
 

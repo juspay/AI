@@ -76,6 +76,10 @@ writeShellApplication {
         # These two are how OMP finds the gateway and asks it what it serves, so the
         # model list is the gateway's, not a copy we maintain.
         export LITELLM_BASE_URL=${gatewayUrl}
+        # The per-run agent dir means OMP would open its first-run setup wizard on
+        # every launch. Everything the wizard asks — provider, key, model — is
+        # already answered above, so skip it (an explicitly forced setup still runs).
+        export OMP_SKIP_SETUP=1
         exec ${lib.getExe llm-agents.omp} "$@"
   '';
 }
