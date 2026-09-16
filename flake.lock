@@ -111,11 +111,11 @@
     "juspay-skills": {
       "flake": false,
       "locked": {
-        "lastModified": 1789505334,
-        "narHash": "sha256-4SecqPwHvMFEn3nu+Ll2QGA/ZkKzxp9XBUylsu4aMFE=",
+        "lastModified": 1789594162,
+        "narHash": "sha256-fliaXQxlwRiRLjIZIDbGRTRcluQV4uW2xY9a0wqtodY=",
         "owner": "juspay",
         "repo": "skills",
-        "rev": "2d2fdd9c32dc4675b90a94671e581ec8a0fcc9f6",
+        "rev": "8e28b62d08a0a7f37bc7be5925b999f2e9f27c60",
         "type": "github"
       },
       "original": {
