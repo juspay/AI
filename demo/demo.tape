@@ -57,15 +57,15 @@ Enter
 
 # The wrapper skips omp's setup wizard (it has already answered everything the
 # wizard asks), so the welcome screen is the first thing up. It prints the model
-# omp resolved for the `default` role
+# omp resolved for the `default` role — a gateway id, discovered at startup
+# rather than vendored — so it doubles as the "we are on the Juspay gateway"
+# marker.
 #
 # The `default` role is *seeded* into the recording machine's real
 # ~/.omp/agent/config.yml on first launch, and never rewritten after that. So
 # this wait is only a marker on a machine whose config.yml either does not exist
 # yet or still names glm-latest: if you have since switched models with `/model`,
-# delete that file before recording or this wait times out on your model's id. — a gateway id, discovered at startup
-# rather than vendored — so it doubles as the "we are on the Juspay gateway"
-# marker.
+# delete that file before recording or this wait times out on your model's id.
 #
 # Match it on the *prompt status line* (`… glm-latest … -4% … 400K`), not on the
 # welcome splash, which prints the same id on a line of its own several seconds
