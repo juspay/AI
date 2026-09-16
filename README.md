@@ -21,7 +21,7 @@ sources into an OMP plugin (see [Skills](#skills)):
 ## Quick Start
 
 ```bash
-nix run github:juspay/AI
+nix run https://github.com/juspay/AI/archive/refs/heads/main.zip
 ```
 
 That is the whole product: one package, `default`, also published as `omp` —
