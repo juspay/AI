@@ -24,6 +24,7 @@ jobs:
       # this edit rides along in the same PR. Pinning a tag (rather than main)
       # is what makes "the latest release" and "what we build" the same thing.
       - name: Track the latest oh-my-pi release
+        id: omp
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -42,15 +43,49 @@ jobs:
           # *older* than the tag we already pin — re-pinning it would trade a
           # building flake for a broken one. The pin catches up on the next run
           # after upstream publishes.
-          if [ "$(printf '%s\n%s\n' "$current" "$tag" | sort -V | tail -n1)" != "$tag" ]; then
+          if [ "$current" = "$tag" ]; then
+            echo "Already pinned to release $tag; nothing to move."
+            pin=same
+          elif [ "$(printf '%s\n%s\n' "$current" "$tag" | sort -V | tail -n1)" != "$tag" ]; then
             echo "Pinned $current is not behind release $tag; leaving it alone."
-            exit 0
+            pin=ahead
+          else
+            url="github:can1357/oh-my-pi/$tag"
+            sed -i "s|\(oh-my-pi\.url = \)\"[^\"]*\"|\1\"$url\"|" flake.nix
+            # A ref that stops matching must fail the job, not open a PR that
+            # silently pins nothing.
+            grep -qF "oh-my-pi.url = \"$url\";" flake.nix
+            pin=bumped
           fi
-          url="github:can1357/oh-my-pi/$tag"
-          sed -i "s|\(oh-my-pi\.url = \)\"[^\"]*\"|\1\"$url\"|" flake.nix
-          # A ref that stops matching must fail the job, not open a PR that
-          # silently pins nothing.
-          grep -qF "oh-my-pi.url = \"$url\";" flake.nix
+
+          # The PR's title and body name the release the pin is at, and the one
+          # it moves to. The lock diff below them cannot: it is a pair of commit
+          # hashes, and the tag those hashes were resolved from lives only in
+          # flake.nix. A run that moves nothing says *that* instead — the PR it
+          # opens is then about the other inputs. Emitted here, as outputs, for
+          # the one reason that matters: the update step below cannot re-resolve
+          # a tag, so this is the only place that knows both versions.
+          case "$pin" in
+            bumped)
+              title="chore(flake): update inputs (oh-my-pi $current → $tag)"
+              note=$(printf '**oh-my-pi `%s` → `%s`**\n\n- flake.nix pin: `github:can1357/oh-my-pi/%s` → `github:can1357/oh-my-pi/%s`\n- release notes: https://github.com/can1357/oh-my-pi/releases/tag/%s' \
+                "$current" "$tag" "$current" "$tag" "$tag")
+              ;;
+            ahead)
+              title="chore(flake): update inputs"
+              note=$(printf '**oh-my-pi unchanged (`%s`)** — the latest upstream release is `%s`, and the pin only ever moves forward.' "$current" "$tag")
+              ;;
+            same)
+              title="chore(flake): update inputs"
+              note=$(printf '**oh-my-pi unchanged (`%s`)** — the pin already tracks the latest upstream release.' "$current")
+              ;;
+          esac
+          {
+            echo "pr-title=$title"
+            echo "pr-note<<NOTE"
+            printf '%s\n' "$note"
+            echo "NOTE"
+          } >> "$GITHUB_OUTPUT"
 
       - uses: DeterminateSystems/nix-installer-action@main
 
@@ -58,7 +93,26 @@ jobs:
         id: update
         with:
           branch: update_flake_lock_action
-          pr-title: "chore(flake): update inputs"
+          # Title and body come from the step above. The body is this action's
+          # own — its commit message body is the per-input lock diff, which the
+          # `GIT_COMMIT_MESSAGE` placeholder expands — with the release named in
+          # front of it, since a diff of revisions does not say which release
+          # they belong to.
+          pr-title: ${{ steps.omp.outputs.pr-title }}
+          pr-body: |
+            Automated changes by the [update-flake-lock](https://github.com/DeterminateSystems/update-flake-lock) GitHub Action.
+
+            ${{ steps.omp.outputs.pr-note }}
+
+            ```
+            {{ env.GIT_COMMIT_MESSAGE }}
+            ```
+
+            ### Running GitHub Actions on this PR
+
+            GitHub Actions will not run workflows on pull requests which are opened by a GitHub Action.
+
+            **To run GitHub Actions workflows on this PR, close and re-open this pull request.**
           commit-msg: "chore(flake): update inputs"
           pr-labels: dependencies
           pr-assignees: ${{ github.repository_owner }}
