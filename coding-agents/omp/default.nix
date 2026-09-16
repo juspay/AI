@@ -5,6 +5,13 @@
 # Everything Juspay-specific lives here rather than in a catalog module: with a
 # single consumer, a separate file was one more indirection between the wrapper
 # and the four strings it substitutes.
+#
+# The wrapper deliberately does *not* isolate OMP from the user's own state. It
+# leaves `~/.omp/agent` where OMP puts it, so config, sessions, auth and
+# onboarding persist across runs and the config is the user's file to edit. What
+# the wrapper contributes is layered on top instead of replacing it: skills come
+# in on the command line (`-e`), and the model roles are *seeded once* into a
+# config.yml that does not exist yet. An existing config.yml is never rewritten.
 { lib, writeShellApplication, formats, gum, coreutils, omp, skillsPlugin }:
 let
   # Juspay gateway policy. There is deliberately no model catalog: OMP ships
@@ -19,12 +26,19 @@ let
   defaultModel = "glm-latest";
   smallModel = "open-fast";
 
-  configFile = (formats.yaml { }).generate "omp-config.yml" {
-    # OMP's `omp-plugins` skill provider scans `skills/` next to every extension
-    # directory named here. That sibling scan is the whole mechanism — there is
-    # no manifest to declare, and `skills.customDirectories` is dead in the omp
-    # this flake ships. See coding-agents/omp/plugin.nix.
-    extensions = [ "${skillsPlugin}" ];
+  # The *seed* config: what a first-time user's `~/.omp/agent/config.yml` starts
+  # out as, and nothing more. Only `modelRoles` belongs here. Anything the
+  # wrapper wants on every run has to arrive some other way, because this file
+  # stops being ours the moment it exists — `/settings` and `/model` write to
+  # it, and so does the user's editor.
+  #
+  # In particular `extensions:` is NOT here. OMP replaces arrays wholesale when
+  # a higher config layer sets them, so a user adding their own extension to
+  # this file would silently drop the skills plugin; and seeding it once would
+  # freeze a store path that changes on every lock bump. The plugin goes on the
+  # command line instead (see `-e` below), which composes with whatever
+  # `extensions:` the user ends up writing.
+  seedConfig = (formats.yaml { }).generate "omp-config.yml" {
     # Without this OMP starts on its own first-available model; the roles are how
     # our recommendation reaches the agent.
     modelRoles = {
@@ -66,20 +80,42 @@ writeShellApplication {
           export LITELLM_API_KEY
         fi
 
-        # Give OMP a writable per-run agent directory holding the generated config
-        # and nothing else. It cannot live in the store: OMP writes into it.
-        PI_CODING_AGENT_DIR=$(${coreutils}/bin/mktemp -d -t omp-agent-XXXXXX)
-        export PI_CODING_AGENT_DIR
-        cp ${configFile} "$PI_CODING_AGENT_DIR/config.yml"
-        chmod u+w "$PI_CODING_AGENT_DIR/config.yml"
+        # Seed the model roles into OMP's real agent directory, once. This is the
+        # user's `~/.omp/agent/config.yml` — the same file `/settings` and
+        # `/model` write to — so we only ever create it, never rewrite it: a
+        # per-run overlay would put our roles above the user's and make `/model`
+        # look like it silently reverts. The cost is that a config.yml predating
+        # this wrapper (or one the user stripped) gets no roles, and OMP then
+        # starts on its first-available model; `/model` fixes that for good.
+        #
+        # Honour PI_CODING_AGENT_DIR if the user relocated the agent dir, and
+        # fall back to OMP's own default otherwise. Both `:-` guards are for
+        # set -u; with neither variable set there is no directory to seed and
+        # OMP will complain about $HOME on its own terms, not ours.
+        agent_dir="''${PI_CODING_AGENT_DIR:-''${HOME:-}/.omp/agent}"
+        if [ -n "''${PI_CODING_AGENT_DIR:-}''${HOME:-}" ] && [ ! -e "$agent_dir/config.yml" ]; then
+          ${coreutils}/bin/mkdir -p "$agent_dir"
+          ${coreutils}/bin/cp ${seedConfig} "$agent_dir/config.yml"
+          chmod u+w "$agent_dir/config.yml"
+        fi
 
         # These two are how OMP finds the gateway and asks it what it serves, so the
         # model list is the gateway's, not a copy we maintain.
         export LITELLM_BASE_URL=${gatewayUrl}
-        # The per-run agent dir means OMP would open its first-run setup wizard on
-        # every launch. Everything the wizard asks — provider, key, model — is
-        # already answered above, so skip it (an explicitly forced setup still runs).
+        # Kept even though the agent dir now persists and the wizard would only
+        # run once. Everything it asks — provider, key, model — the wrapper has
+        # already answered above, so the one run it would get is a run spent
+        # re-entering the key we just prompted for. An explicitly forced setup
+        # (`omp setup`) still works.
         export OMP_SKIP_SETUP=1
-        exec ${lib.getExe omp} "$@"
+
+        # Skills, on the command line rather than in the config file. OMP's
+        # `omp-plugins` skill provider scans `skills/` next to every extension
+        # root, and `-e` roots count: there is no manifest to declare, and
+        # `skills.customDirectories` is dead in the omp this flake ships. See
+        # coding-agents/omp/plugin.nix. CLI roots are merged with the settings
+        # `extensions:` list and de-duplicated by absolute path, so this adds to
+        # the user's extensions instead of replacing them.
+        exec ${lib.getExe omp} -e "${skillsPlugin}" "$@"
   '';
 }
