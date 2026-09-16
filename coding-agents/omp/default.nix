@@ -12,7 +12,7 @@
 # the wrapper contributes is layered on top instead of replacing it: skills come
 # in on the command line (`-e`), and the model roles are *seeded once* into a
 # config.yml that does not exist yet. An existing config.yml is never rewritten.
-{ lib, writeShellApplication, formats, gum, coreutils, omp, skillsPlugin }:
+{ lib, writeShellApplication, formats, gum, coreutils, omp, skillsPlugin, koluPlugin }:
 let
   # Juspay gateway policy. There is deliberately no model catalog: OMP ships
   # LiteLLM discovery and asks the gateway at startup what it serves — ids,
@@ -109,13 +109,30 @@ writeShellApplication {
         # (`omp setup`) still works.
         export OMP_SKIP_SETUP=1
 
-        # Skills, on the command line rather than in the config file. OMP's
-        # `omp-plugins` skill provider scans `skills/` next to every extension
-        # root, and `-e` roots count: there is no manifest to declare, and
-        # `skills.customDirectories` is dead in the omp this flake ships. See
-        # coding-agents/omp/plugin.nix. CLI roots are merged with the settings
-        # `extensions:` list and de-duplicated by absolute path, so this adds to
-        # the user's extensions instead of replacing them.
-        exec ${lib.getExe omp} -e "${skillsPlugin}" "$@"
+        # Extensions, on the command line rather than in the config file. CLI
+        # `-e` roots are merged with the settings `extensions:` list and
+        # de-duplicated by absolute path, so these add to the user's extensions
+        # instead of replacing them — which a generated `extensions:` would do,
+        # since OMP replaces arrays wholesale between config layers. `-e` may be
+        # repeated, and there are two roots because they are two different kinds
+        # of thing:
+        #
+        #   1. The bundle this flake composes (coding-agents/omp/plugin.nix): a
+        #      bare `skills/` directory, no manifest. OMP's plugin providers
+        #      scan `skills/<name>/SKILL.md` beside every extension root, so it
+        #      loads on layout alone.
+        #
+        #   2. kolu's own `agent-plugin/`, an Agent Plugins 1.0.0 package taken
+        #      verbatim from juspay/kolu. It is passed through rather than
+        #      harvested into (1) so that omp's standard `agent-plugins`
+        #      provider reads kolu's `plugin.json` and loads *everything* kolu
+        #      declares — the `kolu` skill and the `kolu` MCP server in its
+        #      `mcp.json`, which the skill needs to be useful. Copying a
+        #      SKILL.md out of it, as this wrapper used to, would ship the
+        #      instructions without the tools. The MCP server runs `kolu mcp`,
+        #      so it needs `kolu` on PATH at runtime; when it is absent the
+        #      server simply fails to start and the rest of the agent is
+        #      unaffected.
+        exec ${lib.getExe omp} -e "${skillsPlugin}" -e "${koluPlugin}" "$@"
   '';
 }

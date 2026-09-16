@@ -11,11 +11,16 @@ let
         return machine.succeed(f"cat $(which {agent})")
 
     # The skills this flake promises its users. Not a sample: each name is a
-    # contract, and one per composed source, so that a source dropping out
-    # upstream fails the build instead of silently shipping a smaller agent.
-    # juspay/skills has already lost a skill this way once (`nix-flake`), and it
-    # now arrives through an unattended nightly lock bump, so nothing else would
-    # catch it. Add a name here only if you mean to promise it.
+    # contract, and one per source, so that a source dropping out upstream fails
+    # the build instead of silently shipping a smaller agent. juspay/skills has
+    # already lost a skill this way once (`nix-flake`), and it now arrives
+    # through an unattended nightly lock bump, so nothing else would catch it.
+    # Add a name here only if you mean to promise it.
+    #
+    # `kolu` is the odd one: the first two are copied into this repo's bundle,
+    # while kolu ships its own Agent Plugins package that omp loads whole. Its
+    # presence here is therefore also a check on that provider — see
+    # test-omp.nix.
     PROMISED_SKILLS = ["nix-haskell", "frontend-design", "kolu"]
   '';
 in

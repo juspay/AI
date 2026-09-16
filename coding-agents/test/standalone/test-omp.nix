@@ -25,11 +25,28 @@ in
         } | timeout 40 omp acp 2>/dev/null \
           | grep -o '"name":"skill:[^"]*"' | sed 's/.*skill://;s/"$//' | sort -u
       '')
+
+      # Asks OMP which Agent Plugins packages contributed an MCP server, the
+      # only way omp 18.2 answers that question without a TTY — see the comment
+      # on `plugin_mcp_data_dirs()` below for why this roundabout probe is the
+      # surface and not `/mcp list`.
+      #
+      # A full session start is what runs MCP discovery (ACP does not: an ACP
+      # client owns its own MCP servers). The session then dies for want of a
+      # reachable gateway — there is no network in this VM — which is fine and
+      # ignored: discovery runs first, and it is discovery we are reading.
+      (pkgs.writeShellScriptBin "omp-plugin-mcp-data" ''
+        set -u
+        cd "$(mktemp -d)"
+        timeout 180 omp --mode rpc -p hi </dev/null >/dev/null 2>&1 || true
+        ls "$HOME/.omp/plugins/data" 2>/dev/null || true
+      '')
     ];
     environment.variables.LITELLM_API_KEY = "test-api-key";
   };
 
   testScript = ''
+    import json
     import re
 
     ${common.testPreamble}
@@ -58,6 +75,28 @@ in
         """
         return set(machine.succeed("su - testuser -c omp-list-skills").split())
 
+    def plugin_mcp_data_dirs():
+        """Per-plugin data directories omp created for Agent Plugins MCP servers.
+
+        This is evidence by side effect, and deliberately so: omp 18.2 has no
+        headless way to print the MCP servers it discovered. `/mcp list` outside
+        the TUI (ACP, `--mode rpc`) reads only `~/.omp/agent/mcp.json` and
+        `.omp/mcp.json` and says "No MCP servers configured" for everything
+        else; the TUI's own `/mcp` is the one listing that consults the live
+        manager, and connection-status events are gated behind `hasUI`. So there
+        is nothing to grep for.
+
+        What there is, is `<plugins>/data/<plugin>-<digest>`: the Agent Plugins
+        provider creates that directory — and *only* creates it — after it has
+        parsed a plugin root's `plugin.json`, read its `mcp.json`, and found a
+        stdio server in it, because the spec requires the data dir to exist
+        before any plugin subprocess launches. Its appearance therefore means
+        omp registered kolu's stdio MCP server from the `-e` root. The `kolu`
+        binary is not installed here, so the server cannot actually start; that
+        is downstream of this and not what is being asserted.
+        """
+        return set(machine.succeed("su - testuser -c omp-plugin-mcp-data").split())
+
     # First launch: this is also what seeds the config asserted on below.
     version = machine.succeed("su - testuser -c 'omp --version'")
     print(f"omp version: {version}")
@@ -68,16 +107,39 @@ in
             raise Exception(f"{setting!r} not found in wrapper")
     print("✅ wrapper points omp at the gateway")
 
-    # Skills reach omp on the command line, not through a config file: `-e`
+    # Extensions reach omp on the command line, not through a config file: `-e`
     # composes with whatever `extensions:` the user writes, where a generated
-    # `extensions:` would be replaced wholesale by theirs. Check the flag names
-    # a plugin root that actually exists — a stale or empty path would load
-    # nothing, and omp says nothing about it.
-    match = re.search(r'-e "(/nix/store/\S*-omp-juspay-skills-plugin)"', script)
-    if not match:
-        raise Exception(f"wrapper does not pass the skills plugin with -e:\n{script}")
-    machine.succeed(f"test -d {match.group(1)}/skills")
-    print(f"✅ wrapper loads skills with -e {match.group(1)}")
+    # `extensions:` would be replaced wholesale by theirs. Check the flags name
+    # roots that actually exist — a stale or empty path would load nothing, and
+    # omp says nothing about it.
+    #
+    # There are exactly two, in a fixed order, and they are different kinds of
+    # thing: our own composed bundle, then kolu's Agent Plugins package taken
+    # verbatim out of juspay/kolu.
+    # Anchored on /nix/store so the `[ ! -e "$agent_dir/…" ]` test above — the
+    # other `-e` in this script, and a different `-e` entirely — cannot match.
+    roots = re.findall(r'-e "(/nix/store/[^"]+)"', script)
+    if len(roots) != 2:
+        raise Exception(f"expected two -e roots in the wrapper, got {roots}:\n{script}")
+    bundle, kolu_root = roots
+    if not bundle.endswith("-omp-juspay-skills-plugin"):
+        raise Exception(f"first -e root is not this repo's skills bundle: {bundle}")
+    machine.succeed(f"test -d {bundle}/skills")
+    print(f"✅ wrapper loads this repo's skills with -e {bundle}")
+
+    # kolu is no longer harvested into our bundle — if it reappears there, the
+    # standard package below is being shadowed by a copy nobody maintains.
+    machine.fail(f"test -e {bundle}/skills/kolu")
+
+    # The kolu root is a whole Agent Plugins 1.0.0 package, and every file omp's
+    # standard provider reads out of it has to be present: the manifest that
+    # classifies the root, the MCP document beside it, and the skill.
+    for rel in ["plugin.json", "mcp.json", "skills/kolu/SKILL.md"]:
+        machine.succeed(f"test -f {kolu_root}/{rel}")
+    mcp = json.loads(machine.succeed(f"cat {kolu_root}/mcp.json"))
+    if "kolu" not in mcp.get("mcpServers", {}):
+        raise Exception(f"kolu's mcp.json no longer declares a `kolu` server:\n{mcp}")
+    print(f"✅ wrapper loads kolu's agent plugin with -e {kolu_root}")
 
     # The config is the user's own ~/.omp/agent/config.yml now, not a per-run
     # temp dir: sessions, auth and onboarding persist beside it and `/model`
@@ -112,5 +174,19 @@ in
     if missing:
         raise Exception(f"omp did not load {missing} via -e (loaded {sorted(skills)})")
     print(f"✅ omp loaded {len(skills)} skills through -e, including {PROMISED_SKILLS}")
+
+    # `kolu` in that set is already more than a skill check. A root whose
+    # `plugin.json` targets the Agent Plugins standard is handled by the
+    # standard provider *exclusively* for skills and MCP — omp's legacy
+    # providers are locked out of both surfaces for such a root — and the same
+    # classification gates both. So the kolu skill arriving at all means omp
+    # accepted kolu's manifest and read the package as a standard one.
+    #
+    # The MCP half then shows up as omp provisioning that package's data
+    # directory; see `plugin_mcp_data_dirs()`.
+    data_dirs = plugin_mcp_data_dirs()
+    if not any(d.startswith("kolu-") for d in data_dirs):
+        raise Exception(f"omp registered no MCP server from kolu's plugin root (data dirs: {sorted(data_dirs)})")
+    print(f"✅ omp registered kolu's MCP server from its plugin root ({sorted(data_dirs)})")
   '';
 }
