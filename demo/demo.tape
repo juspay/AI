@@ -31,14 +31,15 @@ Set Padding 20
 # The reply is an LLM round-trip; give the marker waits room (default is 15s).
 Set WaitTimeout 180s
 
-# Pin the pty to the grid vhs actually renders (1200x920 at font size 22 with
-# padding 20 is 28 rows of 81 columns). The size the shell inherits has come up
-# wrong — 80 columns against a wider screen — on some runs, and omp lays its
-# welcome screen out from that, which is the other way the input box ends up off
-# screen. `Hide` keeps the command out of the GIF; `clear` keeps its output out
-# of the frame.
+# Pin the pty width to the grid vhs renders (1200px wide at font size 22 with
+# padding 20 is 81 columns). The width the shell inherits has come up wrong — 80
+# columns against a wider screen — on some runs, and omp lays its welcome screen
+# out from that, which is the other way the input box ends up off screen. Only
+# the width: pinning rows too leaves a row of the real grid outside the pty, and
+# omp's scrolling then strands a stale copy of the status line in it. `Hide`
+# keeps the command out of the GIF; `clear` keeps its output out of the frame.
 Hide
-Type "stty rows 28 cols 81; clear"
+Type "stty cols 81; clear"
 Enter
 Sleep 1s
 Show
