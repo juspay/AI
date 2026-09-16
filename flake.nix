@@ -35,8 +35,7 @@
     # like the other two — nothing here builds kolu — and unlike the skill it
     # replaces, this path is *not* export-ignored, so an ordinary flake input
     # can see it and `nix flake update` can bump it.
-    # TODO: repoint to github:juspay/kolu once juspay/kolu#2252 merges.
-    kolu = { url = "github:juspay/kolu/agent-plugins"; flake = false; };
+    kolu = { url = "github:juspay/kolu"; flake = false; };
   };
 
   outputs = { self, nixpkgs, oh-my-pi, juspay-skills, anthropics-skills, kolu }:

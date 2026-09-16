@@ -131,11 +131,6 @@ fallback.
 All three sources are ordinary flake inputs, so `nix flake update` bumps every
 one of them and there is nothing to re-vendor or re-pin by hand.
 
-> **Temporary:** `kolu` is pinned to the `agent-plugins` branch until
-> [juspay/kolu#2252](https://github.com/juspay/kolu/pull/2252) merges, at which
-> point the input in [`flake.nix`](flake.nix) goes back to `github:juspay/kolu`
-> (there is a `TODO` on it).
-
 To get the same skills in your own agent without this flake, install them from
 the marketplace instead — see
 [juspay/skills](https://github.com/juspay/skills#usage):
@@ -148,10 +143,12 @@ the marketplace instead — see
 ## Daily Updates
 
 This flake's `flake.lock` is **auto-updated daily** via CI, so you always get the
-latest omp release and skills. omp is pinned to an upstream **release tag** rather
-than a branch, so the daily job resolves the latest release first and rewrites that
-ref — `nix flake update` alone can never move a tag-pinned input — and it only ever
-moves the pin *forward*, since a release trails the tag it belongs to. If pinning
+latest omp release, skills and kolu plugin. The job runs a plain `nix flake
+update`, so every input rides along with no per-input wiring — except omp, which
+is pinned to an upstream **release tag** rather than a branch, so the job
+resolves the latest release first and rewrites that ref (`nix flake update`
+alone can never move a tag-pinned input) and it only ever moves the pin
+*forward*, since a release trails the tag it belongs to. If pinning
 via `flake.lock` in your own flake, run `nix flake update AI` to pull the latest.
 Nothing about the gateway's models is snapshotted here, so there is nothing else to
 refresh.
