@@ -43,10 +43,26 @@ upstream omp. It:
    gateway what it serves — ids, context windows, capabilities — at startup.
    What the model picker shows is what your key can actually call, with the
    limits the gateway enforces.
-3. **Writes a throwaway agent directory** (`PI_CODING_AGENT_DIR`) holding a
-   generated `config.yml`. That config names the store-built skills plugin under
-   `extensions:` and sets the `default` / `smol` model roles (`glm-latest` and
-   `open-fast`) so omp does not start on whatever model it finds first.
+3. **Loads the skills plugin** by passing the store-built plugin directory on
+   omp's own command line (`omp -e /nix/store/…-omp-juspay-skills-plugin`). A
+   CLI extension root is added to whatever `extensions:` your settings already
+   list, so the bundled skills and your own extensions compose.
+4. **Seeds the model roles, once.** On the first launch, if
+   `~/.omp/agent/config.yml` does not exist, the wrapper creates it containing
+   the `default` / `smol` roles (`glm-latest` and `open-fast`) and nothing else,
+   so omp does not start on whatever model it finds first.
+
+That config file is **yours** from then on. It is omp's ordinary global settings
+file — the one `/model` and `/settings` write to — and the wrapper never touches
+it again, so model switches, sessions, auth and onboarding state all persist
+across runs. Edit it freely; the wrapper only ever adds the file if it is
+missing. To start over, delete it and launch again:
+
+```bash
+rm ~/.omp/agent/config.yml   # next launch re-seeds the roles
+```
+
+(If you already export `PI_CODING_AGENT_DIR`, the wrapper seeds there instead.)
 
 If you run omp yourself rather than through the wrapper, those same two
 variables are all it needs:
@@ -81,10 +97,12 @@ the Nix store into one directory that Oh My Pi loads as an **extension**:
     └── kolu/SKILL.md             # juspay/kolu
 ```
 
-The layout is the whole contract. The wrapper names that directory under
-`extensions:` in its generated `config.yml`, and OMP's `omp-plugins` skill
-provider scans `skills/<name>/SKILL.md` beside it — one level deep,
-non-recursively, with `skills` hardcoded in OMP.
+The layout is the whole contract. The wrapper passes that directory to omp as
+`-e <dir>`, and OMP's `omp-plugins` skill provider scans `skills/<name>/SKILL.md`
+beside every extension root — one level deep, non-recursively, with `skills`
+hardcoded in OMP. It goes on the command line rather than into `config.yml`
+because OMP replaces arrays wholesale between config layers: an `extensions:`
+list written by the wrapper would be dropped the moment you added your own.
 
 `nix flake update` picks up new skills; there is nothing to re-vendor — with
 one exception. juspay/skills and anthropics/skills are flake inputs, so they

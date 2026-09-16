@@ -1,6 +1,6 @@
 # The skill bundle this flake hands its agent, composed in the store — no
 # vendored copy in the repo. The omp wrapper names this directory under
-# `extensions:` (see coding-agents/omp/juspay-oneclick.nix).
+# an extension root, `omp -e <dir>` (see coding-agents/omp/default.nix).
 #
 # The whole contract is the layout: OMP scans `<root>/skills/<name>/SKILL.md`,
 # exactly one level deep and non-recursively. `skills` is hardcoded in OMP, not
@@ -11,15 +11,16 @@
 # Deliberately NOT written here: a `package.json` with an `omp` manifest. It
 # reads like it should be required — OMP's docs describe plugins that way — but
 # that requirement belongs to the *installed-plugin* path (`omp plugin install`,
-# `~/.omp/plugins/node_modules`), not to `extensions:`. Measured against the omp
-# this flake ships, an `extensions:` directory loads its skills identically with
+# `~/.omp/plugins/node_modules`), not to an extension root named on the command
+# line or in `extensions:`. Measured against the omp
+# this flake ships, an extension-root directory loads its skills identically with
 # no package.json at all, with a manifest pointing at a directory that does not
 # exist, and with a correct one; and a manifest pointing at real content in a
 # directory *not* named `skills` loads nothing. Provider precedence against a
 # colliding project skill is unchanged too. So a manifest here would be inert
 # code carrying a frozen `version` beside content that changes nightly. If a
 # future OMP does start requiring it, the ACP check in
-# coding-agents/test/standalone/test-omp-oneclick.nix goes red before the
+# coding-agents/test/standalone/test-omp.nix goes red before the
 # nightly lock bump can merge.
 { runCommand, fetchgit, juspay-skills, anthropics-skills }:
 let
