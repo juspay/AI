@@ -1,5 +1,5 @@
 {
-  description = "One-click coding agents";
+  description = "One-click Oh My Pi on Juspay's LLM gateway";
 
   nixConfig = {
     extra-substituters = "https://cache.nixos.asia/oss";
@@ -11,10 +11,9 @@
     nixpkgs.follows = "llm-agents/nixpkgs";
 
     # Skill sources. Not flakes — each is a plain tree we read `skills/` out of
-    # when building the OMP plugin (coding-agents/omp/plugin.nix). These
-    # replace the APM vendoring that used to commit copies into .claude/ and
-    # .opencode/. juspay/skills is itself an OMP marketplace and plugin (its
-    # package.json carries the manifest), so its tree is used as-is.
+    # when building the OMP plugin (coding-agents/omp/plugin.nix). Nothing is
+    # vendored into this repo. juspay/skills is itself an OMP marketplace and
+    # plugin (its package.json carries the manifest), so its tree is used as-is.
     juspay-skills = { url = "github:juspay/skills"; flake = false; };
     anthropics-skills = { url = "github:anthropics/skills"; flake = false; };
     # kolu is deliberately *not* an input — its skill is export-ignored out of
@@ -37,62 +36,24 @@
       packages = forAllSystems (system:
         let
           pkgs = pkgsFor system;
-          lib = pkgs.lib;
-          opencode = pkgs.llm-agents.opencode;
-          omp = pkgs.llm-agents.omp;
-          callOc = path: lib.callPackageWith (pkgs // { inherit opencode; }) (./coding-agents/opencode/packages + "/${path}");
-          callOmp = path: lib.callPackageWith (pkgs // { inherit omp; }) (./coding-agents/omp + "/${path}");
-          juspayConfigFile = callOc "config.nix" { };
-          baseConfigFile = callOc "config.nix" { juspay = false; };
           # The skills, built in the store as an OMP plugin package. OMP takes
-          # the package itself (via `extensions:`); opencode has no plugin
-          # notion and just wants a directory of `<name>/SKILL.md`, which is
-          # the package's `skills/` subdirectory.
-          skillsPlugin = callOmp "plugin.nix" { inherit juspay-skills anthropics-skills; };
-          skillsDir = "${skillsPlugin}/skills";
-
-          # Every variant this flake packages, keyed by its attr name.
-          variant = {
-            inherit opencode;
-            opencode-juspay-editable = callOc "juspay-editable.nix" { configFile = juspayConfigFile; };
-            opencode-juspay-oneclick = callOc "juspay-oneclick.nix" { configFile = juspayConfigFile; inherit skillsDir; };
-            opencode-oneclick = callOc "oneclick.nix" { configFile = baseConfigFile; inherit skillsDir; };
-            inherit omp;
-            omp-juspay-oneclick = callOmp "juspay-oneclick.nix" { inherit skillsPlugin; };
+          # the package itself, via `extensions:`.
+          skillsPlugin = pkgs.callPackage ./coding-agents/omp/plugin.nix {
+            inherit juspay-skills anthropics-skills;
           };
-
-          # What a bare `nix run` offers, in menu order. Each name must be a key
-          # of `variant` above — that lookup is the only link between this list
-          # and the packages it fronts.
-          frontDoor = [
-            { name = "opencode-juspay-oneclick"; description = "Juspay config and skills bundled"; }
-            { name = "opencode-oneclick"; description = "Skills bundled, bring your own provider"; }
-            { name = "opencode-juspay-editable"; description = "Creates editable Juspay config at ~/.config/opencode/"; }
-            { name = "opencode"; description = "Plain OpenCode, no config"; }
-            { name = "omp-juspay-oneclick"; description = "Oh My Pi on the Juspay gateway, skills bundled"; }
-            { name = "omp"; description = "Plain Oh My Pi, no config"; }
-          ];
+          omp = pkgs.callPackage ./coding-agents/omp { inherit skillsPlugin; };
         in
-        variant // {
-          default = pkgs.callPackage ./coding-agents/selector.nix {
-            variants = map (v: v // { package = variant.${v.name}; }) frontDoor;
-          };
-          # Convenience alias: `nix run .#oneclick`
-          oneclick = variant.opencode-juspay-oneclick;
+        {
+          default = omp;
+          # The same derivation under the name users type: `nix run
+          # github:juspay/AI#omp`. There is only one package here, so this is an
+          # alias, not a variant.
+          inherit omp;
         }
       );
 
       apps = forAllSystems (system:
         nixpkgs.lib.mapAttrs (_: pkg: { program = nixpkgs.lib.getExe pkg; type = "app"; }) self.packages.${system}
       );
-
-      # Home Manager module that installs the opencode *configuration* only
-      # (not the binary). System-agnostic — it uses the importing config's
-      # pkgs, so it does not depend on this flake's nixpkgs. See the module
-      # header for usage.
-      homeModules = {
-        opencode = ./coding-agents/opencode/home-module.nix;
-        default = self.homeModules.opencode;
-      };
     };
 }

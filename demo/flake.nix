@@ -4,13 +4,23 @@
   inputs = {
     ai.url = "github:juspay/AI";
     nixpkgs.follows = "ai/nixpkgs";
+
+    # Pinned for vhs 0.11.0: vhs 0.12.0 (what ai/nixpkgs carries) runs the whole
+    # tape, prints "Creating <file>…", exits 0 and writes no GIF — re-check when
+    # bumping this, and drop the pin once nixpkgs' vhs records again.
+    vhs-nixpkgs.url = "github:NixOS/nixpkgs/2c423e03bbafcff28bfadc6781a4a8257f205cb5";
   };
 
-  outputs = { self, nixpkgs, ai }:
+  outputs = { self, nixpkgs, ai, vhs-nixpkgs }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
-      demoDeps = [ pkgs.vhs pkgs.bc ];
+      demoDeps = [ vhs-nixpkgs.legacyPackages.${system}.vhs pkgs.bc ];
+      # vhs renders through its bundled chromium, which takes fonts from
+      # fontconfig. The recording machines (kolu-ci-*) ship a single
+      # proportional font, so without this the terminal comes out with
+      # letter-spaced text. The tape selects this family by name.
+      fontsConf = pkgs.makeFontsConf { fontDirectories = [ pkgs.jetbrains-mono ]; };
     in
     {
       apps.${system}.default = {
@@ -20,8 +30,27 @@
           runtimeInputs = demoDeps;
           text = ''
             tape="''${1:?Usage: record-demo <tape-file>}"
+            # The tape's first `Output <file>` line, quoted or not.
+            out=""
+            while IFS= read -r line; do
+              case "$line" in
+                "Output "*)
+                  out="''${line#Output }"
+                  out="''${out%\"}"
+                  out="''${out#\"}"
+                  break
+                  ;;
+              esac
+            done < "$tape"
             echo "Recording demo from $tape..."
-            vhs "$tape"
+            FONTCONFIG_FILE=${fontsConf} vhs "$tape"
+            # vhs can exit 0 having written nothing — seen with vhs 0.12.0,
+            # which runs the whole tape, prints "Creating <file>…" and produces
+            # no file. Fail here rather than three lines later in `just demo`.
+            if [ -n "$out" ] && [ ! -s "$out" ]; then
+              echo "Error: vhs exited 0 but wrote no $out." >&2
+              exit 1
+            fi
             echo "Done!"
           '';
         });

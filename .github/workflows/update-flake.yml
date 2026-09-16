@@ -27,8 +27,8 @@ jobs:
           pr-labels: dependencies
           pr-assignees: ${{ github.repository_owner }}
 
-  # Run the exact same CI (nix build + opencode prompt, ubuntu + macos) against
-  # the bumped lock. GitHub won't run on:pull_request CI for a GITHUB_TOKEN-
+  # Run the exact same CI (nix build + VM tests, ubuntu + macos) against the
+  # bumped lock. GitHub won't run on:pull_request CI for a GITHUB_TOKEN-
   # authored PR, so we run it here and gate the merge on it instead — no PAT.
   verify:
     needs: update

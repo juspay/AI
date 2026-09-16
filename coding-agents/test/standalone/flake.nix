@@ -17,10 +17,7 @@
     in
     {
       checks.${system} = {
-        opencode-juspay-editable = mkTest ./test-juspay-editable.nix;
-        opencode-juspay-oneclick = mkTest ./test-juspay-oneclick.nix;
-        opencode-oneclick = mkTest ./test-oneclick.nix;
-        omp-oneclick = mkTest ./test-omp-oneclick.nix;
+        omp = mkTest ./test-omp.nix;
       };
     };
 }

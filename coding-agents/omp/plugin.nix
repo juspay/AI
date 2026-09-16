@@ -1,7 +1,6 @@
-# The skill bundle this flake hands its agents, composed in the store — no
+# The skill bundle this flake hands its agent, composed in the store — no
 # vendored copy in the repo. The omp wrapper names this directory under
-# `extensions:` (see coding-agents/omp/juspay-oneclick.nix); opencode is handed
-# its `skills/` subdirectory.
+# `extensions:` (see coding-agents/omp/juspay-oneclick.nix).
 #
 # The whole contract is the layout: OMP scans `<root>/skills/<name>/SKILL.md`,
 # exactly one level deep and non-recursively. `skills` is hardcoded in OMP, not

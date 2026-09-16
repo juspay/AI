@@ -3,12 +3,12 @@ let
   common = import ./common.nix;
 in
 {
-  name = "omp-oneclick";
+  name = "omp";
 
   nodes.machine = { pkgs, ... }: {
     imports = [ common.baseNode ];
     environment.systemPackages = [
-      ai.packages.${pkgs.stdenv.hostPlatform.system}.omp-juspay-oneclick
+      ai.packages.${pkgs.stdenv.hostPlatform.system}.default
 
       # Asks OMP which skills it loaded, by driving a real session over ACP and
       # reading the /skill:<name> command it registers per discovered skill.
@@ -57,7 +57,7 @@ in
     print(f"omp version: {version}")
 
     script = wrapper_script("omp")
-    for setting in ["export LITELLM_BASE_URL=https://grid.ai.juspay.net", "export LITELLM_API_KEY"]:
+    for setting in ["export LITELLM_BASE_URL=https://grid.ai.juspay.net", "export LITELLM_API_KEY", "export OMP_SKIP_SETUP=1"]:
         if setting not in script:
             raise Exception(f"{setting!r} not found in wrapper")
     print("✅ wrapper points omp at the gateway")
