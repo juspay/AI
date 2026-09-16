@@ -37,8 +37,9 @@ in
         """The skills OMP itself reports having loaded.
 
         Every other assertion in these tests reads a file *we* generate, so they
-        all sit on this repo's clock. OMP sits on its own: it ships daily
-        through llm-agents -> flake.lock -> an auto-merged bump, and its
+        all sit on this repo's clock. OMP sits on its own: upstream cuts several
+        releases a week, and each one reaches us as a release-tag bump in
+        flake.nix -> flake.lock -> an auto-merged PR. Its
         settings schema does move — `skills.customDirectories` -> `extensions:`
         is exactly what this wiring changed to. OMP ignores an unrecognised
         config key silently, so if a future release renames or narrows

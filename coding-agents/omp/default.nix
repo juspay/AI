@@ -5,7 +5,7 @@
 # Everything Juspay-specific lives here rather than in a catalog module: with a
 # single consumer, a separate file was one more indirection between the wrapper
 # and the four strings it substitutes.
-{ lib, writeShellApplication, formats, gum, coreutils, llm-agents, skillsPlugin }:
+{ lib, writeShellApplication, formats, gum, coreutils, omp, skillsPlugin }:
 let
   # Juspay gateway policy. There is deliberately no model catalog: OMP ships
   # LiteLLM discovery and asks the gateway at startup what it serves — ids,
@@ -80,6 +80,6 @@ writeShellApplication {
         # every launch. Everything the wizard asks — provider, key, model — is
         # already answered above, so skip it (an explicitly forced setup still runs).
         export OMP_SKIP_SETUP=1
-        exec ${lib.getExe llm-agents.omp} "$@"
+        exec ${lib.getExe omp} "$@"
   '';
 }

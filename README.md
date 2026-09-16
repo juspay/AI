@@ -60,6 +60,13 @@ omp
 Everything else is ordinary omp: `--model litellm/kimi-k3` to start elsewhere,
 `ctrl+p` to cycle role models, `/switch` to change provider.
 
+The `omp` binary itself is **upstream's own build**: this flake takes it from
+[upstream's flake](https://github.com/can1357/oh-my-pi/blob/main/flake.nix) pinned
+to a release tag, and adds only the wrapper above and the skills plugin. If you
+would rather manage OMP declaratively, upstream also ships `programs.omp` Home
+Manager and NixOS modules — this flake does not use them, and the package here is
+a wrapper, not a module.
+
 ## Skills
 
 The skills listed at the top are **not vendored into this repo**.
@@ -98,9 +105,13 @@ the marketplace instead — see
 ## Daily Updates
 
 This flake's `flake.lock` is **auto-updated daily** via CI, so you always get the
-latest omp release and skills. If pinning via `flake.lock` in your own flake, run
-`nix flake update AI` to pull the latest. Nothing about the gateway's models is
-snapshotted here, so there is nothing else to refresh.
+latest omp release and skills. omp is pinned to an upstream **release tag** rather
+than a branch, so the daily job resolves the latest release first and rewrites that
+ref — `nix flake update` alone can never move a tag-pinned input — and it only ever
+moves the pin *forward*, since a release trails the tag it belongs to. If pinning
+via `flake.lock` in your own flake, run `nix flake update AI` to pull the latest.
+Nothing about the gateway's models is snapshotted here, so there is nothing else to
+refresh.
 
 ## Development
 
@@ -126,5 +137,4 @@ The skill sources are fetched and built into an OMP plugin package in the store
 ## Related
 
 - [juspay/skills](https://github.com/juspay/skills) — Shared AI agent skills; also an OMP / Claude Code plugin marketplace
-- [Oh My Pi](https://github.com/can1357/oh-my-pi) — The upstream agent this flake packages
-- [llm-agents.nix](https://github.com/numtide/llm-agents.nix) — The upstream Nix packaging that this flake builds on
+- [Oh My Pi](https://github.com/can1357/oh-my-pi) — The upstream agent; its own flake builds the `omp` this repo wraps

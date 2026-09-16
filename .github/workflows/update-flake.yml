@@ -16,6 +16,42 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # oh-my-pi is pinned to a release *tag*, and a tag is invisible to
+      # `nix flake update`: the ref in flake.nix has to move first, or the
+      # lock's `oh-my-pi` entry would re-resolve to the tag it is already on,
+      # forever. So resolve upstream's latest release here and rewrite that ref;
+      # the update step below then locks it — it commits the whole worktree, so
+      # this edit rides along in the same PR. Pinning a tag (rather than main)
+      # is what makes "the latest release" and "what we build" the same thing.
+      - name: Track the latest oh-my-pi release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release view --repo can1357/oh-my-pi --json tagName --jq .tagName)
+          echo "Latest oh-my-pi release: $tag"
+          # An empty or unexpected answer must stop here: the ref below would
+          # otherwise be rewritten to something that is not a tag at all.
+          case "$tag" in
+            v[0-9]*) ;;
+            *) echo "error: 'oh-my-pi' has no usable release tag ($tag)" >&2; exit 1 ;;
+          esac
+          current=$(sed -n 's|.*oh-my-pi\.url = "github:can1357/oh-my-pi/\([^"]*\)";.*|\1|p' flake.nix)
+          # Only ever move the pin forward. A GitHub release trails the tag it
+          # belongs to (v18.2.0's went up 50 minutes later; v18.2.1 was tagged
+          # before its release existed), so "latest release" is occasionally
+          # *older* than the tag we already pin — re-pinning it would trade a
+          # building flake for a broken one. The pin catches up on the next run
+          # after upstream publishes.
+          if [ "$(printf '%s\n%s\n' "$current" "$tag" | sort -V | tail -n1)" != "$tag" ]; then
+            echo "Pinned $current is not behind release $tag; leaving it alone."
+            exit 0
+          fi
+          url="github:can1357/oh-my-pi/$tag"
+          sed -i "s|\(oh-my-pi\.url = \)\"[^\"]*\"|\1\"$url\"|" flake.nix
+          # A ref that stops matching must fail the job, not open a PR that
+          # silently pins nothing.
+          grep -qF "oh-my-pi.url = \"$url\";" flake.nix
+
       - uses: DeterminateSystems/nix-installer-action@main
 
       - uses: DeterminateSystems/update-flake-lock@main
