@@ -37,12 +37,14 @@ Wait+Screen /ALFABRAVO/
 
 ### Keeping omp's input box on screen
 
-omp's welcome screen is as tall as the terminal, and the rotating tip under it
-is of random length: a tip that wraps to three lines pushes the input box below
-the bottom of the screen, and the recording then waits out its timeout on a
-welcome screen that never accepts the prompt. Two settings keep that from
-happening: the tape asks for a 920px-tall terminal (more rows, so a long tip has
-room), and it pins the pty width to the grid vhs renders (`stty cols 81`, inside
+omp's first screen is a stack — a 20-row welcome panel, a rotating tip of random
+length (up to 3 rows), and, a few seconds in, a 5-row "Update Available" banner
+from the background update check — and the input box comes after all of it.
+Whatever does not fit is drawn below the bottom of the screen, input box
+included, and the recording then waits out its timeout on a welcome screen that
+never accepts the prompt. Two settings keep that from happening: the tape asks
+for a 1080px-tall terminal (34 rows, enough for the worst-case stack), and it
+pins the pty width to the grid vhs renders (`stty cols 81`, inside
 `Hide`/`Show` so neither the command nor its output reaches the GIF) — the width
 the shell inherits has come up as 80 columns against a wider screen on some
 runs, which throws omp's layout off the same way. Width only: pinning the row

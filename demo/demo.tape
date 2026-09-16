@@ -19,12 +19,16 @@ Set Shell "bash"
 Set FontFamily "JetBrains Mono"
 Set FontSize 22
 Set Width 1200
-# 920, not 800: at 800 the terminal is 25 rows, which omp's welcome screen fills
-# to the last row. Its rotating tip line is of random length, and a tip that
-# wraps to three lines pushes the input box past the bottom of the screen — the
-# recording then sits on the welcome screen, never sees a prompt, and times out.
-# The extra rows are the slack that keeps the input box on screen.
-Set Height 920
+# Tall on purpose. omp's first screen is a stack that has to fit above the input
+# box, and at 800px (25 rows) it does not: the welcome panel alone is 20 rows,
+# the rotating tip under it is of random length (up to 3 rows), and the
+# background update check adds a 5-row "Update Available" banner a few seconds
+# in. Anything that does not fit is simply drawn below the bottom of the screen,
+# input box included — the recording then sits on the welcome screen, never sees
+# the prompt it typed, and times out. 1080px is 34 rows, which covers that
+# worst case (20 + 3 + 5 + 3) with room to spare; the slack shows as empty space
+# under the input box until the conversation grows into it.
+Set Height 1080
 Set TypingSpeed 50ms
 Set Theme "Catppuccin Mocha"
 Set Padding 20
