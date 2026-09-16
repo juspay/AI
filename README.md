@@ -6,7 +6,7 @@ sources into an OMP plugin (see [Skills](#skills)):
 
 - [juspay/skills](https://github.com/juspay/skills) — Shared AI agent skills
 - [anthropics/skills](https://github.com/anthropics/skills) — `frontend-design` skill
-- [juspay/kolu](https://github.com/juspay/kolu/tree/master/agents/.apm/skills/kolu) — `kolu` terminal automation skill
+- [juspay/kolu](https://github.com/juspay/kolu) — the `kolu` agent plugin: terminal automation skill **and** MCP server
 
 <figure>
 <img alt="Oh My Pi answering a prompt through Juspay's LLM gateway" src="demo/demo.gif" />
@@ -43,10 +43,11 @@ upstream omp. It:
    gateway what it serves — ids, context windows, capabilities — at startup.
    What the model picker shows is what your key can actually call, with the
    limits the gateway enforces.
-3. **Loads the skills plugin** by passing the store-built plugin directory on
-   omp's own command line (`omp -e /nix/store/…-omp-juspay-skills-plugin`). A
-   CLI extension root is added to whatever `extensions:` your settings already
-   list, so the bundled skills and your own extensions compose.
+3. **Loads two extension roots** on omp's own command line — the store-built
+   skills bundle (`-e /nix/store/…-omp-juspay-skills-plugin`) and kolu's own
+   agent plugin (`-e /nix/store/…/agent-plugin`). CLI extension roots are added
+   to whatever `extensions:` your settings already list, so these and your own
+   extensions compose.
 4. **Seeds the model roles, once.** On the first launch, if
    `~/.omp/agent/config.yml` does not exist, the wrapper creates it containing
    the `default` / `smol` roles (`glm-latest` and `open-fast`) and nothing else,
@@ -85,31 +86,55 @@ a wrapper, not a module.
 
 ## Skills
 
-The skills listed at the top are **not vendored into this repo**.
-[`coding-agents/omp/plugin.nix`](coding-agents/omp/plugin.nix) composes them in
+Nothing listed at the top is **vendored into this repo**, and the three sources
+arrive two different ways.
+
+**The bundle we compose.** juspay/skills and anthropics/skills are plain trees;
+[`coding-agents/omp/plugin.nix`](coding-agents/omp/plugin.nix) copies them in
 the Nix store into one directory that Oh My Pi loads as an **extension**:
 
 ```
 /nix/store/...-omp-juspay-skills-plugin/
 └── skills/
     ├── nix-haskell/SKILL.md      # …and the rest of juspay/skills
-    ├── frontend-design/SKILL.md  # anthropics/skills
-    └── kolu/SKILL.md             # juspay/kolu
+    └── frontend-design/SKILL.md  # anthropics/skills
 ```
 
 The layout is the whole contract. The wrapper passes that directory to omp as
-`-e <dir>`, and OMP's `omp-plugins` skill provider scans `skills/<name>/SKILL.md`
-beside every extension root — one level deep, non-recursively, with `skills`
-hardcoded in OMP. It goes on the command line rather than into `config.yml`
-because OMP replaces arrays wholesale between config layers: an `extensions:`
-list written by the wrapper would be dropped the moment you added your own.
+`-e <dir>`, and OMP scans `skills/<name>/SKILL.md` beside every extension root —
+one level deep, non-recursively, with `skills` hardcoded in OMP. It goes on the
+command line rather than into `config.yml` because OMP replaces arrays wholesale
+between config layers: an `extensions:` list written by the wrapper would be
+dropped the moment you added your own.
 
-`nix flake update` picks up new skills; there is nothing to re-vendor — with
-one exception. juspay/skills and anthropics/skills are flake inputs, so they
-follow the lock. **kolu is pinned by hand** inside `plugin.nix`: its `SKILL.md`
-lives under a path kolu marks `export-ignore`, which every Nix flake fetcher
-honours, so no flake input can see it. Bumping it means editing the `rev` and
-`hash` there.
+**kolu's own package.** juspay/kolu ships an
+[Agent Plugins](https://agent-plugins.org) 1.0.0 package at `agent-plugin/` —
+`plugin.json`, `mcp.json`, `skills/kolu/SKILL.md` — and the wrapper hands omp
+that directory as a *second* `-e` root rather than copying anything out of it.
+OMP's `agent-plugins` provider then loads the package as kolu publishes it:
+
+```
+github:juspay/kolu → agent-plugin/
+├── plugin.json           # "kolu", Agent Plugins 1.0.0
+├── mcp.json              # stdio MCP server `kolu`, running `kolu mcp`
+└── skills/kolu/SKILL.md
+```
+
+That is the point of passing it through: the skill's primary path *is* the MCP
+server's tools, so shipping the `SKILL.md` alone (which is what this flake used
+to do) would ship the instructions without the tools. The MCP server needs the
+`kolu` binary on `PATH` at runtime; if it is missing the server simply fails to
+start, and if it is present but no kolu daemon is reachable it exits cleanly —
+either way the rest of the agent is unaffected, and the skill documents a CLI
+fallback.
+
+All three sources are ordinary flake inputs, so `nix flake update` bumps every
+one of them and there is nothing to re-vendor or re-pin by hand.
+
+> **Temporary:** `kolu` is pinned to the `agent-plugins` branch until
+> [juspay/kolu#2252](https://github.com/juspay/kolu/pull/2252) merges, at which
+> point the input in [`flake.nix`](flake.nix) goes back to `github:juspay/kolu`
+> (there is a `TODO` on it).
 
 To get the same skills in your own agent without this flake, install them from
 the marketplace instead — see
@@ -149,10 +174,12 @@ just demo    # re-record the demo screencast (needs LITELLM_API_KEY)
 ├── demo/                     # Demo screencast infrastructure
 ```
 
-The skill sources are fetched and built into an OMP plugin package in the store
+The skill sources are fetched into the store and loaded as OMP extension roots
 — see [Skills](#skills). Nothing is committed to this repo.
 
 ## Related
 
 - [juspay/skills](https://github.com/juspay/skills) — Shared AI agent skills; also an OMP / Claude Code plugin marketplace
+- [juspay/kolu](https://github.com/juspay/kolu) — Terminal automation for coding agents; ships the `kolu` agent plugin this flake loads
 - [Oh My Pi](https://github.com/can1357/oh-my-pi) — The upstream agent; its own flake builds the `omp` this repo wraps
+- [Agent Plugins](https://agent-plugins.org) — The portable plugin standard kolu's package targets and OMP implements

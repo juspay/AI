@@ -124,6 +124,23 @@
         "type": "github"
       }
     },
+    "kolu": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789593398,
+        "narHash": "sha256-zh9O/ZjY+53mNfjgL6BxaCuj0wQukVleT2Rigk00YcE=",
+        "owner": "juspay",
+        "repo": "kolu",
+        "rev": "f74c65da988f562c95fedba3d5fdd636d2071449",
+        "type": "github"
+      },
+      "original": {
+        "owner": "juspay",
+        "ref": "agent-plugins",
+        "repo": "kolu",
+        "type": "github"
+      }
+    },
     "nix-bun": {
       "inputs": {
         "nixpkgs": [
@@ -205,6 +222,7 @@
       "inputs": {
         "anthropics-skills": "anthropics-skills",
         "juspay-skills": "juspay-skills",
+        "kolu": "kolu",
         "nixpkgs": [
           "oh-my-pi",
           "nixpkgs"
