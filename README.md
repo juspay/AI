@@ -1,7 +1,8 @@
 # AI
 
-One-click **[Oh My Pi (OMP)](https://github.com/can1357/oh-my-pi)** on Juspay's
-LLM gateway, with portable skills and plugins bundled (see [Skills](#skills)).
+One-click **[Oh My Pi (OMP)](https://github.com/can1357/oh-my-pi)** with portable
+skills and plugins bundled (see [Skills](#skills)). Run on Juspay's LLM gateway
+or use your own provider with the standalone package.
 
 - [juspay/skills](https://github.com/juspay/skills) — Shared AI agent skills
 - [juspay/kolu](https://github.com/juspay/kolu) — the `kolu` agent plugin: terminal automation skill **and** MCP server
@@ -14,27 +15,46 @@ LLM gateway, with portable skills and plugins bundled (see [Skills](#skills)).
 ## Prerequisites
 
 - **Nix** — Install via [the Nix installer](https://nixos.asia/en/install). New to Nix? See the [Nix First Steps](https://nixos.asia/en/nix-first) tutorial.
-- **Gateway API key** *(Juspay employees only)* — Create one at [grid.ai.juspay.net/dashboard](https://grid.ai.juspay.net/dashboard) (requires VPN to create, but **not** to use afterwards). Export it as `LITELLM_API_KEY`, the name OMP's own LiteLLM support reads. The wrapper prompts for it if it is unset.
+- **Provider access** — The default Juspay package needs a gateway API key: create one at [grid.ai.juspay.net/dashboard](https://grid.ai.juspay.net/dashboard) (Juspay employees only; requires VPN to create, but **not** to use afterwards). Export it as `LITELLM_API_KEY`, or let the wrapper prompt. The standalone package uses OMP's ordinary provider setup instead and requires no Juspay account.
 
 ## Quick Start
+
+### Juspay gateway
 
 ```bash
 nix run https://github.com/juspay/AI/archive/refs/heads/main.zip
 ```
 
-That is the whole product: one package, `default`, also published as `omp` —
+`default` and `omp` are the same Juspay-configured package:
 `nix run github:juspay/AI#omp` runs the same derivation.
 
 The first run prompts for the gateway key if `LITELLM_API_KEY` is unset — handy
 on fresh VMs or containers. Export it in your shell to skip the prompt on
 subsequent runs.
 
-## How the wrapper works
+### Your own provider (no Juspay account)
 
-The wrapper is a short shell script
-([`coding-agents/omp/default.nix`](coding-agents/omp/default.nix)) around
-upstream omp. It translates shared gateway policy and plugin packages into
-OMP's environment, settings, and CLI:
+```bash
+nix run github:juspay/AI#omp-standalone
+```
+
+This includes the same skills and Kolu plugin, but adds no LiteLLM settings,
+gateway credential prompt, model-role defaults, or onboarding bypass. OMP's own
+setup walks you through connecting a provider. Both variants expose an `omp`
+binary; choose one when installing a package.
+
+The variants share OMP's normal user state. Switching to standalone does **not**
+erase settings or credentials previously written by the Juspay wrapper. Use
+`omp setup` and `/model` to select your own provider, or set
+`PI_CODING_AGENT_DIR` to a separate directory for independent state.
+
+## How the wrappers work
+
+The portable wrapper
+([`coding-agents/omp/default.nix`](coding-agents/omp/default.nix)) only loads
+plugins on upstream OMP's command line. The optional Juspay wrapper
+([`coding-agents/omp/juspay.nix`](coding-agents/omp/juspay.nix)) runs that
+portable package with gateway-specific authentication and settings:
 
 1. **Ensures the gateway key**, prompting for `LITELLM_API_KEY` if it is unset.
 2. **Points omp at the gateway** with `LITELLM_BASE_URL`. OMP ships LiteLLM
@@ -42,7 +62,7 @@ OMP's environment, settings, and CLI:
    gateway what it serves — ids, context windows, capabilities — at startup.
    What the model picker shows is what your key can actually call, with the
    limits the gateway enforces.
-3. **Loads two extension roots** on omp's own command line — the store-built
+3. **Loads two extension roots through the portable wrapper** — the store-built
    skills bundle (`-e /nix/store/…-juspay-skills-plugin`) and kolu's own
    agent plugin (`-e /nix/store/…/agent-plugin`). CLI extension roots are added
    to whatever `extensions:` your settings already list, so these and your own
@@ -66,8 +86,8 @@ modifying the file.
 
 (If you export `PI_CODING_AGENT_DIR`, the wrapper fills defaults there instead.)
 
-If you run omp yourself rather than through the wrapper, those same two
-variables are all it needs:
+To use the gateway with standalone or upstream OMP without the Juspay wrapper,
+set these two variables:
 
 ```bash
 export LITELLM_BASE_URL=https://grid.ai.juspay.net
@@ -80,7 +100,7 @@ Everything else is ordinary omp: `--model litellm/kimi-k3` to start elsewhere,
 
 The `omp` binary itself is **upstream's own build**: this flake takes it from
 [upstream's flake](https://github.com/can1357/oh-my-pi/blob/main/flake.nix) pinned
-to a release tag, and adds only the wrapper above and the skills plugin. If you
+to a release tag, and adds only the wrappers above and the skills plugin. If you
 would rather manage OMP declaratively, upstream also ships `programs.omp` Home
 Manager and NixOS modules — this flake does not use them, and the package here is
 a wrapper, not a module.
@@ -156,20 +176,21 @@ refresh.
 ## Development
 
 ```bash
-just test    # run the wrapper package test (NixOS VM, Linux only)
+just test    # test Juspay and standalone packages (NixOS VMs, Linux only)
 just demo    # re-record the demo screencast (needs LITELLM_API_KEY)
 ```
 
 ## Repo Structure
 
 ```
-├── flake.nix                 # Pins, package composition, public default/omp outputs
+├── flake.nix                 # Pins, package composition, public package/app outputs
 ├── coding-agents/
 │   ├── gateway.nix          # Gateway URL and recommended model aliases
 │   ├── ensure-api-key.nix   # Shared gateway credential prompt
 │   ├── plugin.nix           # Portable Agent Plugins skills bundle
 │   ├── omp/
-│   │   ├── default.nix      # OMP environment, role mapping, settings and CLI
+│   │   ├── default.nix      # Portable OMP + plugins, no provider configuration
+│   │   ├── juspay.nix       # Optional gateway authentication and OMP settings
 │   │   └── fill-config-defaults.py # Preserve user YAML while filling absent keys
 │   └── test/standalone/     # Wrapper integration tests (NixOS VM flake)
 ├── demo/                    # Demo screencast infrastructure
@@ -180,18 +201,19 @@ The skill sources are fetched into the store and loaded as OMP extension roots
 
 ### Boundaries for another agent
 
-Gateway policy, credential acquisition, and portable plugin contents are shared.
-Each agent adapter owns its provider names, model-role mapping, configuration
-format and location, and plugin-loading interface. The YAML merger stays under
-OMP: another agent need not use YAML or share OMP's settings semantics.
+Portable plugin contents are reusable independently of gateway integration.
+Gateway policy and credential acquisition are shared only by Juspay integrations.
+Each agent owns its plugin-loading interface; its optional Juspay wrapper maps
+the shared gateway credential and model aliases into that agent's provider names,
+role mapping, and configuration format. The YAML merger stays under OMP:
+another agent need not use YAML or share OMP's settings semantics.
 
-To add an agent, put its adapter under `coding-agents/<agent>/` and compose its
-upstream package with the shared resources in `flake.nix`. The credential helper
-provides `LITELLM_API_KEY`; an adapter translates that credential and the gateway
-URL to whatever its client expects. Share portable plugins only where the client
-supports them; translate their loading interface in the adapter, not in the
-bundle. Add a named package/app and agent-specific integration checks without
-changing `default = omp`.
+To add an agent, put its portable adapter under `coding-agents/<agent>/` and
+compose its upstream package with supported plugins in `flake.nix`. Layer Juspay
+integration on that package separately, as `omp/juspay.nix` does. The credential
+helper provides `LITELLM_API_KEY`; the integration translates it and the gateway
+URL to whatever its client expects. Add named packages/apps and agent-specific
+integration checks without changing `default = omp`.
 
 This follows the [Hickey/Löwy distinction](https://kolu.dev/blog/hickey-lowy/):
 separate concepts that are tangled today, and isolate gateway decisions from

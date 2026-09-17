@@ -18,6 +18,7 @@
     {
       checks.${system} = {
         omp = mkTest ./test-omp.nix;
+        omp-standalone = mkTest ./test-omp-standalone.nix;
       };
     };
 }
