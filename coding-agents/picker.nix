@@ -1,21 +1,35 @@
 # Selection only: each launcher owns its initialization and plugin protocol.
-{ lib, writeShellApplication, omp, codex, claude }:
+{ lib, writeShellApplication, omp, codex, claude, profile }:
+let
+  ownLogin = lib.optionalString ((profile.gateway or null) != null) " (uses its own login)";
+in
 writeShellApplication {
-  name = "ai";
+  name = "ai-${profile.name}";
   text = ''
+    launch() {
+      case "$1" in
+        omp) shift; exec ${lib.getExe omp} "$@" ;;
+        codex) shift; exec ${lib.getExe codex} "$@" ;;
+        claude) shift; exec ${lib.getExe claude} "$@" ;;
+        *) echo 'Invalid AI_HARNESS; valid values: omp, codex, claude.' >&2; exit 1 ;;
+      esac
+    }
+    if [ "''${AI_HARNESS+x}" = x ]; then
+      launch "$AI_HARNESS" "$@"
+    fi
     if [ ! -t 0 ]; then
-      echo 'Choose an agent with nix run github:juspay/AI#omp, github:juspay/AI#codex, or github:juspay/AI#claude.' >&2
+      echo 'Choose a harness with nix run github:juspay/AI#${profile.name}.omp, github:juspay/AI#${profile.name}.codex, or github:juspay/AI#${profile.name}.claude.' >&2
       exit 1
     fi
 
-    printf 'Choose a coding agent:\n  1) Oh My Pi\n  2) Codex\n  3) Claude Code\n' >&2
+    printf '%s\n' ${lib.escapeShellArg profile.description} 'Choose a coding agent:' '  1) Oh My Pi' '  2) Codex${ownLogin}' '  3) Claude Code${ownLogin}' >&2
     while true; do
       printf 'Agent [1/2/3] (q to quit): ' >&2
       read -r choice
       case "$choice" in
-        1|omp) exec ${lib.getExe omp} "$@" ;;
-        2|codex) exec ${lib.getExe codex} "$@" ;;
-        3|claude) exec ${lib.getExe claude} "$@" ;;
+        1|omp) launch omp "$@" ;;
+        2|codex) launch codex "$@" ;;
+        3|claude) launch claude "$@" ;;
         q|quit) exit 0 ;;
         *) echo 'Enter 1 for Oh My Pi, 2 for Codex, 3 for Claude Code, or q to quit.' >&2 ;;
       esac
