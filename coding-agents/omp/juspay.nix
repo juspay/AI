@@ -1,11 +1,11 @@
-# Juspay integration for OMP. The portable package owns plugin loading;
-# this outer wrapper alone owns LiteLLM, credential UX, and gateway defaults.
-{ lib, writeShellApplication, formats, python3, omp, gateway, ensureApiKey }:
+# Juspay initialization for OMP, composed into the single launcher.
+# JUSPAY=0 skips this integration at runtime, without changing Nix outputs.
+{ lib, formats, python3, gateway, ensureApiKey }:
 let
   # Defaults are merged only into absent keys, preserving /model and /settings
   # choices. Use a round-trip YAML parser to retain comments and quoted values.
   configPython = python3.withPackages (ps: [ ps.ruamel-yaml ]);
-  # Plugins are loaded by the inner portable wrapper, never stored in config.
+  # Plugins are loaded by the launcher, never stored in config.
   configDefaults = (formats.yaml { }).generate "omp-config.yml" {
     # Without this OMP starts on its own first-available model; the roles are how
     # our recommendation reaches the agent.
@@ -22,9 +22,8 @@ let
     task.showResolvedModelBadge = true;
   };
 in
-writeShellApplication {
-  name = "omp";
-  text = ''
+''
+  if [ "''${JUSPAY:-1}" != "0" ]; then
         ${ensureApiKey}
 
         # Fill absent defaults in the persistent config, including
@@ -46,7 +45,5 @@ writeShellApplication {
         # re-entering the key we just prompted for. An explicitly forced setup
         # (`omp setup`) still works.
         export OMP_SKIP_SETUP=1
-
-        exec ${lib.getExe omp} "$@"
-  '';
-}
+  fi
+''

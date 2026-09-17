@@ -87,6 +87,11 @@ in
         """
         return set(machine.succeed("su - testuser -c omp-plugin-mcp-data").split())
 
+    # Runtime opt-out uses the same package, needs no gateway key, and must not
+    # seed gateway settings before upstream OMP starts.
+    machine.succeed("su - testuser -c 'env -u LITELLM_API_KEY JUSPAY=0 omp --version </dev/null'")
+    machine.fail(f"test -e {CONFIG}")
+
     # First launch: this is also what seeds the config asserted on below.
     version = machine.succeed("su - testuser -c 'omp --version'")
     print(f"omp version: {version}")
@@ -161,6 +166,17 @@ in
         machine.fail("su - testuser -c 'PI_CODING_AGENT_DIR=/home/testuser/relocated omp --version'")
         assert machine.succeed(f"cat {relocated}") == invalid
     print("✅ existing roles, settings and comments survive migration; invalid config stays untouched")
+
+    # Opting out also preserves existing user configuration without adding the
+    # gateway's background roles or display defaults.
+    personal = "# personal provider\nmodelRoles:\n  default: openai/my-model\n"
+    write_config(relocated, personal)
+    roles = json.loads(run_as_user(
+        "env -u LITELLM_API_KEY JUSPAY=0 PI_CODING_AGENT_DIR=/home/testuser/relocated "
+        "omp config get modelRoles --json"
+    ))["value"]
+    assert roles == {"default": "openai/my-model"}
+    assert machine.succeed(f"cat {relocated}") == personal
 
     # Check every source skill through the real adapter, plus kolu's separate
     # plugin. An empty or truncated bundle must not lower the expectation.

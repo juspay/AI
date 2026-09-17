@@ -1,5 +1,5 @@
 {
-  description = "Oh My Pi with portable plugins and optional Juspay gateway integration";
+  description = "One-click Oh My Pi on Juspay's LLM gateway";
 
   nixConfig = {
     extra-substituters = "https://cache.nixos.asia/oss";
@@ -52,22 +52,20 @@
           skillsPlugin = pkgs.callPackage ./coding-agents/plugin.nix {
             inherit juspay-skills;
           };
-          omp-standalone = pkgs.callPackage ./coding-agents/omp {
+          omp = pkgs.callPackage ./coding-agents/omp {
+            initialization = pkgs.callPackage ./coding-agents/omp/juspay.nix {
+              inherit gateway ensureApiKey;
+            };
             plugins = [ skillsPlugin "${kolu}/agent-plugin" ];
             # Upstream's own build, on upstream's own package set. We only wrap
             # it; the arg is spelled out because nothing in `pkgs` provides it.
             omp = oh-my-pi.packages.${system}.default;
           };
-          omp = pkgs.callPackage ./coding-agents/omp/juspay.nix {
-            inherit gateway ensureApiKey;
-            omp = omp-standalone;
-          };
         in
         {
           default = omp;
-          # Preserve the existing Juspay entry points. The standalone package
-          # adds only portable plugins, leaving providers and onboarding to OMP.
-          inherit omp omp-standalone;
+          # One package, also available under the name users type.
+          inherit omp;
         }
       );
 
