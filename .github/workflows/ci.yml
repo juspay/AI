@@ -2,6 +2,11 @@ name: CI
 
 on:
   pull_request:
+    # The flake-bump PR is verified (and merged) by update-flake.yml, which
+    # calls this workflow directly. A pull_request run here would only sit
+    # "awaiting approval": github-actions[bot] is never a collaborator, so
+    # GitHub gates its runs on every PR it opens.
+    branches-ignore: [update_flake_lock_action]
   push:
     branches: [main]
   workflow_dispatch:
