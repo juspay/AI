@@ -9,7 +9,7 @@ in
   name = "codex";
   nodes.machine = { pkgs, ... }: {
     imports = [ common.baseNode ];
-    environment.systemPackages = [ ai.packages.${pkgs.stdenv.hostPlatform.system}.codex pkgs.python3 ];
+    environment.systemPackages = [ ai.legacyPackages.${pkgs.stdenv.hostPlatform.system}.juspay.codex pkgs.python3 ];
   };
   testScript = ''
     import shlex

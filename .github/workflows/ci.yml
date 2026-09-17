@@ -57,9 +57,9 @@ jobs:
             --override-input flake .)
           attic push oss "$outs"
 
-      - name: Build picker and all agents
+      - name: Build all profile pickers and harnesses
         run: |
-          nix build --print-build-logs .#default .#omp .#codex .#claude
+          nix build --print-build-logs .#default .#vanilla .#kolu .#juspay
 
       - name: Wrapper package tests
         # The wrapper tests boot NixOS VMs, so they only run where a Linux

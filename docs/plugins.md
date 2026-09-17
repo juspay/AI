@@ -1,24 +1,19 @@
 # Skills and plugins
 
-All three agents load the same two portable sources. Codex uses native
-marketplace installation, OMP uses extension roots, and Claude Code uses
+Each profile supplies the same portable plugins to all three harnesses.
+`vanilla` has none, `kolu` has Kolu, and `juspay` has both sources below.
+Codex uses native marketplace installation, OMP uses extension roots, and Claude Code uses
 session-local plugin directories adapted to its format.
 
 Neither [juspay/skills](https://github.com/juspay/skills) nor
 [juspay/kolu](https://github.com/juspay/kolu) is vendored into this repository.
 The two sources have different packaging owners.
 
-**The bundle we compose.** juspay/skills is a plain tree;
-[`coding-agents/plugin.nix`](../coding-agents/plugin.nix) copies it in
-the Nix store into one directory that Oh My Pi loads as an **extension**:
-```
-/nix/store/...-juspay-skills-plugin/
-├── plugin.json                 # Agent Plugins 1.0.0 manifest
-└── skills/
-    └── nix-haskell/SKILL.md     # …and the rest of juspay/skills
-```
+**juspay/skills.** The flake input itself is an Agent Plugins directory with
+root `plugin.json` and `skills/<name>/SKILL.md`. It is passed directly to each
+adapter, without rebuilding its manifest or copying its skills into a bundle.
 
-The bundle uses the portable Agent Plugins format, not an OMP-specific package.
+The source uses the portable Agent Plugins format, not an OMP-specific package.
 The OMP adapter passes it as `-e <dir>`; OMP discovers the manifest and scans
 `skills/<name>/SKILL.md` one level deep, non-recursively. It goes on the
 command line rather than into `config.yml` because OMP replaces arrays wholesale
@@ -61,13 +56,16 @@ the marketplace instead — see
 ## Codex installation
 
 [`coding-agents/codex/default.nix`](../coding-agents/codex/default.nix) builds a
-local `juspay-ai` marketplace in the Nix store, deriving names from the portable
-manifests. On each launch, it runs upstream Codex's native commands:
+local `<profile.name>-ai` marketplace in the Nix store, deriving plugin names
+from the portable manifests. For the Juspay profile, each launch runs upstream
+Codex's native commands:
 
 1. `codex plugin marketplace add <store-marketplace>`
 2. `codex plugin add juspay-skills@juspay-ai`
 3. `codex plugin add kolu@juspay-ai`
 4. `codex` with your original arguments.
+
+Vanilla skips marketplace registration and plugin installation entirely.
 
 These commands register the marketplace and install/enable the two plugins in
 `~/.codex`, or `CODEX_HOME` when set. They preserve unrelated configuration,
@@ -83,11 +81,11 @@ The Kolu MCP server comes from the same upstream `mcp.json` used by OMP; there i
 no duplicate server definition here. Check it with:
 
 ```bash
-nix run github:juspay/AI#codex -- mcp list
+nix run github:juspay/AI#juspay.codex -- mcp list
 ```
 
 Codex always uses its normal login and model settings. No Juspay initializer is
-composed into it, so `JUSPAY` has no effect and `LITELLM_API_KEY` is not required.
+composed into it, so `AI_GATEWAY` has no effect and `LITELLM_API_KEY` is not required.
 As with OMP's opt-out, the wrapper does not erase environment variables or
 provider settings you supplied yourself.
 
@@ -103,15 +101,15 @@ supporting files, and translates Kolu's MCP declaration into `.mcp.json`.
 The copies are self-contained because Claude checks that components stay within
 their plugin root.
 
-The launcher passes both directories with repeated `--plugin-dir` flags. Claude
-loads them for that session, alongside any extra plugin directories you pass.
+The launcher passes the profile’s directories with repeated `--plugin-dir`
+flags. Claude loads them for that session, alongside any extra plugin directories you pass.
 There is no marketplace registration, install step, or wrapper-written user
 configuration. A new flake build supplies the new plugin contents directly.
 
 ```bash
-nix run github:juspay/AI#claude
-nix run github:juspay/AI#claude -- plugin list --json
-nix run github:juspay/AI#claude -- plugin details kolu
+nix run github:juspay/AI#juspay.claude
+nix run github:juspay/AI#juspay.claude -- plugin list --json
+nix run github:juspay/AI#juspay.claude -- plugin details kolu
 ```
 
 Claude reports these plugins as `juspay-skills@inline` and `kolu@inline`. Kolu's
@@ -119,7 +117,7 @@ server still runs `kolu mcp`, using `kolu` from your `PATH`.
 
 Use normal Claude authentication, model choices, and settings. The launcher
 preserves `~/.claude/settings.json` and honors `CLAUDE_CONFIG_DIR`. It adds no
-Juspay initialization; `JUSPAY` has no effect. Your own environment, project
+Juspay initialization; `AI_GATEWAY` has no effect. Your own environment, project
 configuration, and CLI arguments continue to be handled by Claude itself.
 
 See Claude's [plugin reference](https://code.claude.com/docs/en/plugins-reference)

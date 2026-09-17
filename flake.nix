@@ -1,5 +1,5 @@
 {
-  description = "Oh My Pi, Codex, and Claude Code with shared skills and plugins";
+  description = "Oh My Pi, Codex, and Claude Code with selectable profiles";
 
   nixConfig = {
     extra-substituters = "https://cache.nixos.asia/oss";
@@ -27,7 +27,7 @@
     nixpkgs.follows = "oh-my-pi/nixpkgs";
 
     # Portable skill sources. Nothing is vendored into this repo; the shared
-    # bundle copies juspay/skills, while kolu's plugin is passed through whole.
+    # profiles use juspay/skills directly, while kolu's plugin is passed through whole.
     juspay-skills = { url = "github:juspay/skills"; flake = false; };
 
     # kolu, for its `agent-plugin/` directory: a standard Agent Plugins 1.0.0
@@ -46,38 +46,32 @@
       pkgsFor = system: import nixpkgs { inherit system; };
     in
     {
+      profiles = nixpkgs.lib.genAttrs [ "vanilla" "kolu" "juspay" ]
+        (name: import (./profiles + "/${name}.nix") {
+          sources = { inherit juspay-skills kolu; };
+        });
+
+      lib.mkLaunchers = import ./lib/mk-launchers.nix {
+        inherit oh-my-pi codex-cli claude-code;
+      };
+
+      legacyPackages = forAllSystems (system:
+        nixpkgs.lib.mapAttrs (_: profile: self.lib.mkLaunchers {
+          pkgs = pkgsFor system;
+          inherit profile;
+        }) self.profiles
+      );
+
       packages = forAllSystems (system:
         let
           pkgs = pkgsFor system;
-          gateway = import ./coding-agents/gateway.nix;
-          ensureApiKey = pkgs.callPackage ./coding-agents/ensure-api-key.nix {
-            inherit gateway;
-          };
-          skillsPlugin = pkgs.callPackage ./coding-agents/plugin.nix {
-            inherit juspay-skills;
-          };
-          plugins = [ skillsPlugin "${kolu}/agent-plugin" ];
-          omp = pkgs.callPackage ./coding-agents/omp {
-            initialization = pkgs.callPackage ./coding-agents/omp/juspay.nix {
-              inherit gateway ensureApiKey;
-            };
-            inherit plugins;
-            # Upstream's own build, on upstream's own package set. We only wrap
-            # it; the arg is spelled out because nothing in `pkgs` provides it.
-            omp = oh-my-pi.packages.${system}.default;
-          };
-          codex = pkgs.callPackage ./coding-agents/codex {
-            inherit plugins;
-            codex = codex-cli.packages.${system}.default;
-          };
-          claude = pkgs.callPackage ./coding-agents/claude {
-            inherit plugins;
-            claude = claude-code.packages.${system}.default;
-          };
+          launchers = self.legacyPackages.${system};
         in
-        {
-          default = pkgs.callPackage ./coding-agents/picker.nix { inherit omp codex claude; };
-          inherit omp codex claude;
+        nixpkgs.lib.mapAttrs (_: value: value.picker) launchers // {
+          default = pkgs.callPackage ./coding-agents/profile-picker.nix {
+            inherit launchers;
+            inherit (self) profiles;
+          };
         }
       );
 

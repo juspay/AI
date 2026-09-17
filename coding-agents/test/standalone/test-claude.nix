@@ -10,7 +10,7 @@ in
   nodes.machine = { pkgs, ... }: {
     imports = [ common.baseNode ];
     environment.systemPackages = [
-      ai.packages.${pkgs.stdenv.hostPlatform.system}.claude
+      ai.legacyPackages.${pkgs.stdenv.hostPlatform.system}.juspay.claude
       pkgs.python3
       (pkgs.writeShellScriptBin "kolu" ''
         exec ${pkgs.python3}/bin/python ${./kolu-mcp-fixture.py} "$@"

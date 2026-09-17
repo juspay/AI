@@ -11,7 +11,7 @@ in
   nodes.machine = { pkgs, ... }: {
     imports = [ common.baseNode ];
     environment.systemPackages = [
-      ai.packages.${pkgs.stdenv.hostPlatform.system}.omp
+      ai.legacyPackages.${pkgs.stdenv.hostPlatform.system}.juspay.omp
 
       # Asks OMP which skills it loaded, by driving a real session over ACP and
       # reading the /skill:<name> command it registers per discovered skill.
@@ -89,7 +89,11 @@ in
 
     # Runtime opt-out uses the same package, needs no gateway key, and must not
     # seed gateway settings before upstream OMP starts.
-    machine.succeed("su - testuser -c 'env -u LITELLM_API_KEY JUSPAY=0 omp --version </dev/null'")
+    machine.succeed("su - testuser -c 'env -u LITELLM_API_KEY AI_GATEWAY=0 omp --version </dev/null'")
+    machine.fail(f"test -e {CONFIG}")
+
+    deprecated = machine.succeed("su - testuser -c 'env -u LITELLM_API_KEY JUSPAY=0 omp --version </dev/null 2>&1'")
+    assert deprecated.count("JUSPAY=0 is deprecated; use AI_GATEWAY=0 instead.") == 1, deprecated
     machine.fail(f"test -e {CONFIG}")
 
     # First launch: this is also what seeds the config asserted on below.
@@ -172,7 +176,7 @@ in
     personal = "# personal provider\nmodelRoles:\n  default: openai/my-model\n"
     write_config(relocated, personal)
     roles = json.loads(run_as_user(
-        "env -u LITELLM_API_KEY JUSPAY=0 PI_CODING_AGENT_DIR=/home/testuser/relocated "
+        "env -u LITELLM_API_KEY AI_GATEWAY=0 PI_CODING_AGENT_DIR=/home/testuser/relocated "
         "omp config get modelRoles --json"
     ))["value"]
     assert roles == {"default": "openai/my-model"}

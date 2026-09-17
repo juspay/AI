@@ -3,7 +3,7 @@
 ## Juspay gateway
 
 ```bash
-nix run github:juspay/AI#omp
+nix run github:juspay/AI#juspay.omp
 ```
 
 Create a gateway key at [grid.ai.juspay.net/dashboard](https://grid.ai.juspay.net/dashboard)
@@ -12,8 +12,11 @@ not. Export `LITELLM_API_KEY` to skip the launcher's key prompt on subsequent ru
 
 ## Your own provider
 
+Use `nix run github:juspay/AI#vanilla.omp` for OMP without plugins or a gateway.
+To keep the Juspay profile’s plugins while disabling its gateway:
+
 ```bash
-JUSPAY=0 nix run github:juspay/AI#omp
+AI_GATEWAY=0 nix run github:juspay/AI#juspay.omp
 ```
 
 This is the **same package**, with Juspay integration disabled for that launch.
@@ -21,7 +24,7 @@ Skills and the Kolu plugin still load, but the wrapper skips the gateway key
 prompt, LiteLLM environment injection, model-role defaults, and onboarding bypass.
 On a fresh setup, OMP walks you through connecting your own provider.
 
-`JUSPAY` is a runtime switch: only `0` disables integration; unset or any other
+`AI_GATEWAY` is a runtime switch: only `0` disables integration; unset or any other
 value keeps the default behavior. No Nix `--impure` flag or rebuild is needed.
 
 Opting out does **not** erase existing settings, credentials, or environment
@@ -32,10 +35,9 @@ variables. If you previously used the gateway, select your own models with
 ## Gateway initialization
 
 [`coding-agents/omp/default.nix`](../coding-agents/omp/default.nix) builds one
-launcher that composes initialization with plugin loading. The Juspay-specific
-initialization lives in
-[`coding-agents/omp/juspay.nix`](../coding-agents/omp/juspay.nix), guarded by
-`JUSPAY != 0`. With the default behavior, the wrapper:
+launcher using the selected profile’s plugins and optional `gateway` attrset.
+Gateway initialization is guarded by `AI_GATEWAY != 0`. With the Juspay
+profile, the wrapper:
 
 1. **Ensures the gateway key**, prompting for `LITELLM_API_KEY` if it is unset.
 2. **Points omp at the gateway** with `LITELLM_BASE_URL`. OMP ships LiteLLM
@@ -44,7 +46,7 @@ initialization lives in
    What the model picker shows is what your key can actually call, with the
    limits the gateway enforces.
 3. **Loads two extension roots** on omp's own command line — the store-built
-   skills bundle (`-e /nix/store/…-juspay-skills-plugin`) and kolu's own
+   juspay/skills input (`-e /nix/store/…-source`) and kolu's own
    agent plugin (`-e /nix/store/…/agent-plugin`). CLI extension roots are added
    to whatever `extensions:` your settings already list, so these and your own
    extensions compose.
