@@ -41,9 +41,9 @@ def inventory(plugin):
 
 for juspay in [None, '0', '1']:
     if juspay is None:
-        env.pop('JUSPAY', None)
+        env.pop('AI_GATEWAY', None)
     else:
-        env['JUSPAY'] = juspay
+        env['AI_GATEWAY'] = juspay
     assert '(Claude Code)' in run('--version')
     plugins = json.loads(run('plugin', 'list', '--json'))
     assert {p['id'] for p in plugins} == {'juspay-skills@inline', 'kolu@inline'}, plugins
