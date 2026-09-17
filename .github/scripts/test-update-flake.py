@@ -1,5 +1,6 @@
 """Check release policy and reporting offline, without opening a PR."""
 import os
+from itertools import product
 from pathlib import Path
 import subprocess
 import tempfile
@@ -43,30 +44,35 @@ class UpdateFlakeTests(unittest.TestCase):
                     self.assertEqual(output.read_text(), f'before={before}\nafter={after}\nlatest={latest}\n')
 
     def test_report_uses_resolved_versions_and_preserves_lock_log(self):
-        for omp_changed in [False, True]:
-            for codex_changed in [False, True]:
-                with self.subTest(omp=omp_changed, codex=codex_changed), tempfile.TemporaryDirectory() as directory:
-                    root = Path(directory)
-                    (root / 'flake-update.log').write_text('skills revision changed\n')
-                    env = dict(os.environ, OMP_BEFORE='v18.2.4',
-                               OMP_AFTER='v18.2.5' if omp_changed else 'v18.2.4',
-                               OMP_LATEST='v18.2.5' if omp_changed else 'v18.2.3',
-                               CODEX_BEFORE='0.153.0', CODEX_AFTER='0.154.0' if codex_changed else '0.153.0',
-                               GITHUB_SERVER_URL='https://github.com', GITHUB_REPOSITORY='juspay/AI',
-                               GITHUB_RUN_ID='123', RUNNER_TEMP=str(root), GITHUB_OUTPUT=str(root / 'outputs'))
-                    subprocess.run(['python3', str(SCRIPTS / 'describe-flake-update.py')], env=env, check=True)
-                    outputs = dict(line.split('=', 1) for line in (root / 'outputs').read_text().splitlines())
-                    body = Path(outputs['pr-body-path']).read_text()
-                    self.assertIn('skills revision changed', body)
-                    self.assertIn('https://github.com/juspay/AI/actions/runs/123', body)
-                    self.assertEqual('oh-my-pi v18.2.4 → v18.2.5' in outputs['pr-title'], omp_changed)
-                    self.assertEqual('Codex 0.153.0 → 0.154.0' in outputs['pr-title'], codex_changed)
-                    if codex_changed:
-                        self.assertIn('/releases/tag/rust-v0.154.0', body)
-                    else:
-                        self.assertIn('Codex unchanged (`0.153.0`)', body)
-                    if not omp_changed:
-                        self.assertIn('the pin only moves forward', body)
+        for omp_changed, codex_changed, claude_changed in product([False, True], repeat=3):
+            with self.subTest(omp=omp_changed, codex=codex_changed, claude=claude_changed), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                (root / 'flake-update.log').write_text('skills revision changed\n')
+                env = dict(os.environ, OMP_BEFORE='v18.2.4',
+                           OMP_AFTER='v18.2.5' if omp_changed else 'v18.2.4',
+                           OMP_LATEST='v18.2.5' if omp_changed else 'v18.2.3',
+                           CODEX_BEFORE='0.153.0', CODEX_AFTER='0.154.0' if codex_changed else '0.153.0',
+                           CLAUDE_BEFORE='2.1.273', CLAUDE_AFTER='2.1.274' if claude_changed else '2.1.273',
+                           GITHUB_SERVER_URL='https://github.com', GITHUB_REPOSITORY='juspay/AI',
+                           GITHUB_RUN_ID='123', RUNNER_TEMP=str(root), GITHUB_OUTPUT=str(root / 'outputs'))
+                subprocess.run(['python3', str(SCRIPTS / 'describe-flake-update.py')], env=env, check=True)
+                outputs = dict(line.split('=', 1) for line in (root / 'outputs').read_text().splitlines())
+                body = Path(outputs['pr-body-path']).read_text()
+                self.assertIn('skills revision changed', body)
+                self.assertIn('https://github.com/juspay/AI/actions/runs/123', body)
+                self.assertEqual('oh-my-pi v18.2.4 → v18.2.5' in outputs['pr-title'], omp_changed)
+                self.assertEqual('Codex 0.153.0 → 0.154.0' in outputs['pr-title'], codex_changed)
+                self.assertEqual('Claude Code 2.1.273 → 2.1.274' in outputs['pr-title'], claude_changed)
+                if claude_changed:
+                    self.assertIn('/releases/tag/v2.1.274', body)
+                else:
+                    self.assertIn('Claude Code unchanged (`2.1.273`)', body)
+                if codex_changed:
+                    self.assertIn('/releases/tag/rust-v0.154.0', body)
+                else:
+                    self.assertIn('Codex unchanged (`0.153.0`)', body)
+                if not omp_changed:
+                    self.assertIn('the pin only moves forward', body)
 
 
 if __name__ == '__main__':

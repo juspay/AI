@@ -1,5 +1,5 @@
 {
-  description = "Oh My Pi and Codex with shared skills and plugins";
+  description = "Oh My Pi, Codex, and Claude Code with shared skills and plugins";
 
   nixConfig = {
     extra-substituters = "https://cache.nixos.asia/oss";
@@ -13,9 +13,10 @@
     # reproducible in between.
     oh-my-pi.url = "github:can1357/oh-my-pi/v18.2.4";
 
-    # Tracks the packaging repo's current release binary. Keep its own nixpkgs
-    # so Codex packaging updates do not depend on OMP's build dependencies.
+    # Each packaging repo tracks its current release binary and keeps its own
+    # nixpkgs so packaging updates do not depend on OMP's build dependencies.
     codex-cli.url = "github:sadjow/codex-cli-nix";
+    claude-code.url = "github:sadjow/claude-code-nix";
 
     # Upstream's package set, followed rather than shadowed. omp is built from
     # source there, so its derivation hash is the interface to every binary
@@ -38,7 +39,7 @@
     kolu = { url = "github:juspay/kolu"; flake = false; };
   };
 
-  outputs = { self, nixpkgs, oh-my-pi, codex-cli, juspay-skills, kolu }:
+  outputs = { self, nixpkgs, oh-my-pi, codex-cli, claude-code, juspay-skills, kolu }:
     let
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
@@ -69,10 +70,14 @@
             inherit plugins;
             codex = codex-cli.packages.${system}.default;
           };
+          claude = pkgs.callPackage ./coding-agents/claude {
+            inherit plugins;
+            claude = claude-code.packages.${system}.default;
+          };
         in
         {
-          default = pkgs.callPackage ./coding-agents/picker.nix { inherit omp codex; };
-          inherit omp codex;
+          default = pkgs.callPackage ./coding-agents/picker.nix { inherit omp codex claude; };
+          inherit omp codex claude;
         }
       );
 
