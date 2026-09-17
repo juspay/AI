@@ -1,21 +1,5 @@
 {
   "nodes": {
-    "anthropics-skills": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1789069448,
-        "narHash": "sha256-tI4bTTBfI1ylltklGyiyA7pLoKXEWtrT6lrmwrpLbCw=",
-        "owner": "anthropics",
-        "repo": "skills",
-        "rev": "34040c9c568585f6929bedeaad110ad08f079624",
-        "type": "github"
-      },
-      "original": {
-        "owner": "anthropics",
-        "repo": "skills",
-        "type": "github"
-      }
-    },
     "bun2nix": {
       "inputs": {
         "flake-parts": "flake-parts",
@@ -219,7 +203,6 @@
     },
     "root": {
       "inputs": {
-        "anthropics-skills": "anthropics-skills",
         "juspay-skills": "juspay-skills",
         "kolu": "kolu",
         "nixpkgs": [

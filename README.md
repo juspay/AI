@@ -5,7 +5,6 @@ LLM gateway, with skills bundled. Skills are built at build time from these
 sources into an OMP plugin (see [Skills](#skills)):
 
 - [juspay/skills](https://github.com/juspay/skills) — Shared AI agent skills
-- [anthropics/skills](https://github.com/anthropics/skills) — `frontend-design` skill
 - [juspay/kolu](https://github.com/juspay/kolu) — the `kolu` agent plugin: terminal automation skill **and** MCP server
 
 <figure>
@@ -88,18 +87,16 @@ a wrapper, not a module.
 
 ## Skills
 
-Nothing listed at the top is **vendored into this repo**, and the three sources
+Nothing listed at the top is **vendored into this repo**, and the two sources
 arrive two different ways.
 
-**The bundle we compose.** juspay/skills and anthropics/skills are plain trees;
-[`coding-agents/omp/plugin.nix`](coding-agents/omp/plugin.nix) copies them in
+**The bundle we compose.** juspay/skills is a plain tree;
+[`coding-agents/omp/plugin.nix`](coding-agents/omp/plugin.nix) copies it in
 the Nix store into one directory that Oh My Pi loads as an **extension**:
-
 ```
 /nix/store/...-omp-juspay-skills-plugin/
 └── skills/
-    ├── nix-haskell/SKILL.md      # …and the rest of juspay/skills
-    └── frontend-design/SKILL.md  # anthropics/skills
+    └── nix-haskell/SKILL.md      # …and the rest of juspay/skills
 ```
 
 The layout is the whole contract. The wrapper passes that directory to omp as
@@ -130,7 +127,7 @@ start, and if it is present but no kolu daemon is reachable it exits cleanly —
 either way the rest of the agent is unaffected, and the skill documents a CLI
 fallback.
 
-All three sources are ordinary flake inputs, so `nix flake update` bumps every
+Both sources are ordinary flake inputs, so `nix flake update` bumps every
 one of them and there is nothing to re-vendor or re-pin by hand.
 
 To get the same skills in your own agent without this flake, install them from
