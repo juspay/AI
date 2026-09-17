@@ -148,6 +148,25 @@ in
         raise Exception(f"kolu's mcp.json no longer declares a `kolu` server:\n{mcp}")
     print(f"✅ wrapper loads kolu's agent plugin with -e {kolu_root}")
 
+    def run_as_user(command):
+        return machine.succeed("su - testuser -c " + shlex.quote(command))
+
+    def write_config(path, content):
+        run_as_user("printf %s " + shlex.quote(content) + " > " + shlex.quote(path))
+
+    def effective_setting(key):
+        """The value omp itself resolves for `key`, from the global layer.
+
+        Every other config assertion here reads the file *we* wrote, so they all
+        agree with each other even when omp disagrees with them — a setting
+        spelled or nested differently, or dropped upstream, would sit in
+        config.yml looking right and change nothing. `omp config get` runs the
+        same Settings.init() every session does, so this is where the wrapper's
+        defaults stop being text and become behaviour. JSON because a value of
+        the wrong type must not pass as a coercion of the right one.
+        """
+        return json.loads(run_as_user(f"omp config get {key} --json"))["value"]
+
     # The config is the user's own ~/.omp/agent/config.yml now, not a per-run
     # temp dir: sessions, auth and onboarding persist beside it and `/model`
     # writes land somewhere that survives the next launch.
@@ -155,31 +174,37 @@ in
     config = machine.succeed(f"cat {CONFIG}")
     for role, model in {"default": "open-large", "smol": "open-fast", "task": "open-large", "slow": "open-large"}.items():
         assert f"{role}: litellm/{model}" in config, config
+    # Nested, not the flat "task.showResolvedModelBadge" spelling: OMP resolves
+    # a dotted setting path by walking the document, so the group has to be a
+    # mapping. A flat key would sit there looking right and never be read.
+    assert re.search(r"^task:\n  showResolvedModelBadge: true$", config, re.M), config
+    assert effective_setting("task.showResolvedModelBadge") is True
     machine.fail("test -e /home/testuser/.omp/agent/models.yml")
-    print("✅ fresh config has explicit primary, worker and reviewer roles")
-
-    def run_as_user(command):
-        return machine.succeed("su - testuser -c " + shlex.quote(command))
-
-    def write_config(path, content):
-        run_as_user("printf %s " + shlex.quote(content) + " > " + shlex.quote(path))
+    print("✅ fresh config has explicit primary, worker and reviewer roles, and the resolved model badge omp resolves as on")
 
     # Reproduce an existing wizard config with an expensive primary. Preserve
-    # unrelated settings and comments while adding all background roles.
+    # unrelated settings and comments while adding all background roles and the
+    # display defaults.
     old_config = "# user settings\nsetupVersion: 2\nmodelRoles:\n  default: 'anthropic/expensive:high' # keep choice\n"
     write_config(CONFIG, old_config)
     run_as_user("omp --version")
     config = machine.succeed(f"cat {CONFIG}")
-    for expected in ["# user settings", "setupVersion: 2", "default: 'anthropic/expensive:high' # keep choice", "smol: litellm/open-fast", "task: litellm/open-large", "slow: litellm/open-large"]:
+    for expected in ["# user settings", "setupVersion: 2", "default: 'anthropic/expensive:high' # keep choice", "smol: litellm/open-fast", "task: litellm/open-large", "slow: litellm/open-large", "showResolvedModelBadge: true"]:
         assert expected in config, config
 
-    # A fully configured file must not even be rewritten. /model choices win.
-    custom = config.replace("litellm/open-fast", "litellm/custom-fast").replace("litellm/open-large", "litellm/custom-large")
+    # A fully configured file must not even be rewritten — /model choices win,
+    # and so does the user turning a defaulted setting off. The badge is the
+    # only default that is a *choice* rather than a pointer at our gateway, so
+    # `false` is the value a user is most likely to have set themselves.
+    custom = config.replace("litellm/open-fast", "litellm/custom-fast").replace("litellm/open-large", "litellm/custom-large").replace("showResolvedModelBadge: true", "showResolvedModelBadge: false")
     write_config(CONFIG, custom)
     before = machine.succeed(f"stat -c '%i %Y' {CONFIG}")
     run_as_user("omp --version")
     assert machine.succeed(f"cat {CONFIG}") == custom
     assert machine.succeed(f"stat -c '%i %Y' {CONFIG}") == before
+    # The mirror of the fresh-config probe: a setting the wrapper wants on, off
+    # by the user's own hand, has to reach omp as off.
+    assert effective_setting("task.showResolvedModelBadge") is False
 
     # Relocated configs get the same migration without changing the normal one.
     run_as_user("mkdir -p /home/testuser/relocated")
@@ -197,11 +222,11 @@ in
         assert "default: litellm/open-large" in repaired
         assert "slow: litellm/open-large" in repaired
 
-    for invalid in ["modelRoles: [", "modelRoles: []\n", "modelRoles: null\n"]:
+    for invalid in ["modelRoles: [", "modelRoles: []\n", "modelRoles: null\n", "task: []\n", "task: null\n"]:
         write_config(relocated, invalid)
         machine.fail("su - testuser -c 'PI_CODING_AGENT_DIR=/home/testuser/relocated omp --version'")
         assert machine.succeed(f"cat {relocated}") == invalid
-    print("✅ existing roles and comments survive migration; invalid config stays untouched")
+    print("✅ existing roles, settings and comments survive migration; invalid config stays untouched")
 
     # The assertion that matters. Everything above reads something we generated;
     # this asks omp. It subsumes checking that the wrapper still passes `-e` and
