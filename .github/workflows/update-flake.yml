@@ -108,24 +108,26 @@ jobs:
             {{ env.GIT_COMMIT_MESSAGE }}
             ```
 
-            ### Running GitHub Actions on this PR
+            ### CI on this PR
 
-            GitHub Actions will not run workflows on pull requests which are opened by a GitHub Action.
-
-            **To run GitHub Actions workflows on this PR, close and re-open this pull request.**
+            CI runs against this branch inside the [Update Flake](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) workflow that opened it, which squash-merges the PR when the build passes. No workflow on the PR itself needs approving.
           commit-msg: "chore(flake): update inputs"
           pr-labels: dependencies
           pr-assignees: ${{ github.repository_owner }}
 
   # Run the exact same CI (nix build + VM tests, ubuntu + macos) against the
-  # bumped lock. GitHub won't run on:pull_request CI for a GITHUB_TOKEN-
-  # authored PR, so we run it here and gate the merge on it instead — no PAT.
+  # bumped lock. A pull_request run of ci.yml for a github-actions[bot] PR only
+  # ever sits "awaiting approval" (the bot is never a collaborator), so ci.yml
+  # ignores that branch and we run it here and gate the merge on it instead —
+  # no PAT. `secrets: inherit` hands the callee ATTIC_TOKEN for its cache push;
+  # without it the token is empty and the push fails with an access error.
   verify:
     needs: update
     if: needs.update.outputs.pr != ''
     uses: ./.github/workflows/ci.yml
     with:
       ref: update_flake_lock_action
+    secrets: inherit
 
   # Merge only after verify succeeds. The github-actions app is a ruleset bypass
   # actor, so this GITHUB_TOKEN merge is allowed; human PRs remain gated by the
