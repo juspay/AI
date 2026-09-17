@@ -14,17 +14,19 @@
 # change. juspay/skills already ships that layout at its root, so its skills are
 # copied wholesale; anthropics/skills contributes one skill directory.
 #
-# Deliberately NOT written here: a `plugin.json` declaring this an Agent Plugins
-# package. A bare directory of `skills/` still loads — omp's plugin providers
-# scan `skills/` beside every extension root whether or not a manifest names it,
-# and the ACP check in coding-agents/test/standalone/test-omp.nix is what would
-# go red if a future omp stopped doing that. Giving this bundle a real manifest
-# (and with it MCP servers, commands, an `enabled` flag) is juspay/AI#159, not
-# this file's business today.
+# The root manifest routes discovery through omp's Agent Plugins provider.
+# Keep the standard skills layout so other compatible clients can load the
+# same bundle. The VM test verifies every bundled skill through a real session.
 { runCommand, juspay-skills, anthropics-skills }:
 
 runCommand "omp-juspay-skills-plugin" { } ''
   mkdir -p "$out/skills"
+  cat > "$out/plugin.json" <<'EOF'
+  {
+    "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    "name": "omp-juspay-skills"
+  }
+  EOF
   cp -r ${juspay-skills}/skills/. "$out/skills/"
   cp -r ${anthropics-skills}/skills/frontend-design "$out/skills/"
   chmod -R u+w "$out/skills"

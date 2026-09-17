@@ -19,8 +19,8 @@ let
     #
     # `kolu` is the odd one: the first two are copied into this repo's bundle,
     # while kolu ships its own Agent Plugins package that omp loads whole. Its
-    # presence here is therefore also a check on that provider — see
-    # test-omp.nix.
+    # presence here checks discovery of that separate root; test-omp.nix also
+    # verifies all skills in our composed Agent Plugins bundle.
     PROMISED_SKILLS = ["nix-haskell", "frontend-design", "kolu"]
   '';
 in
