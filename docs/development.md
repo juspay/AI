@@ -3,7 +3,9 @@
 ## Checks
 
 ```bash
-nix build .#default .#omp .#codex .#claude
+nix build .#default .#vanilla .#kolu .#juspay
+nix build .#juspay.omp .#juspay.codex .#juspay.claude .#vanilla.omp
+nix flake check
 python3 .github/scripts/test-update-flake.py
 just test    # NixOS VM tests; Linux with KVM
 just demo    # OMP screencast; requires LITELLM_API_KEY
@@ -41,21 +43,20 @@ Nothing about the gateway's models is snapshotted here.
 ## Architecture
 
 ```
-├── flake.nix                 # Pins, package composition, public package/app outputs
+├── flake.nix                 # Pins, resolved profiles, public outputs
+├── profiles/                 # vanilla.nix, kolu.nix, juspay.nix: plain data
+├── lib/mk-launchers.nix      # Profile + package set → all harness launchers
 ├── coding-agents/
-│   ├── gateway.nix          # Gateway URL and recommended model aliases
-│   ├── ensure-api-key.nix   # Shared gateway credential prompt
-│   ├── plugin.nix           # Portable Agent Plugins skills bundle
-│   ├── picker.nix           # Default interactive agent selection
-│   ├── codex/               # Codex plugin installation, no gateway initialization
-│   ├── claude/              # Claude plugin format and session loading
+│   ├── profile-picker.nix   # Profile selection (AI_PROFILE)
+│   ├── picker.nix           # Harness selection (AI_HARNESS)
+│   ├── codex/               # Profile marketplace installation, own login
+│   ├── claude/              # Plugin adaptation and session loading, own login
 │   ├── omp/
-│   │   ├── default.nix      # One launcher: initialization + plugin loading
-│   │   ├── juspay.nix       # Gateway initialization, skipped when JUSPAY=0
-│   │   └── fill-config-defaults.py # Preserve user YAML while filling absent keys
-│   └── test/standalone/     # Wrapper integration tests (NixOS VM flake)
+│   │   ├── default.nix      # Plugins and optional LiteLLM gateway
+│   │   └── fill-config-defaults.py # Preserve YAML while filling absent keys
+│   └── test/standalone/     # NixOS VM integration tests
 ├── demo/                    # Demo screencast infrastructure
-└── docs/                    # Usage, plugin, and development documentation
+└── docs/                    # Usage, development, and design documentation
 ```
 
 The skill sources are fetched into the store, then loaded by each adapter
@@ -63,22 +64,25 @@ The skill sources are fetched into the store, then loaded by each adapter
 
 ### Boundaries for another agent
 
-Portable plugin contents are reusable independently of gateway integration.
-Gateway policy and credential acquisition are shared only by Juspay integrations.
-Each agent owns its plugin-loading interface; its Juspay initialization maps
-the shared gateway credential and model aliases into that agent's provider names,
-role mapping, and configuration format. The YAML merger stays under OMP:
-another agent need not use YAML or share OMP's settings semantics.
+Profiles are harness-independent data: `name`, `description`, `plugins`, and
+an optional `gateway`. Each adapter owns its plugin-loading protocol. Only OMP
+uses the gateway, including credential acquisition and YAML defaults.
 
-To add an agent, put its adapter under `coding-agents/<agent>/` and compose its
-upstream package with supported plugins in `flake.nix`. Keep Juspay initialization
-separate, as `omp/juspay.nix` does. The credential helper provides
-`LITELLM_API_KEY`; the integration translates it and the gateway URL to whatever
-its client expects. Provider policy and runtime opt-out stay out of portable
-plugin loading. The public outputs are `default` (the picker), `omp`, `codex`,
-and `claude`.
+To add a harness, put its adapter under `coding-agents/<harness>/`, bind its
+upstream package in `lib/mk-launchers.nix`, and add it to the harness picker.
+Every profile then gets the harness. Keep profile-specific names and sources
+out of adapters, and test plugin discovery and preservation of user state.
 
-This follows the [Hickey/Löwy distinction](https://kolu.dev/blog/hickey-lowy/):
-separate concepts that are tangled today, and isolate gateway decisions from
-upstream agent protocols that change independently. There is no agent registry
-or universal wrapper API; the flake is the composition point.
+`packages.<system>.default` selects a profile and then a harness;
+`packages.<system>.<profile>` selects a harness.
+`legacyPackages.<system>.<profile>.<harness>` launches directly. Flat package
+outputs keep `nix flake check` valid. Profile pickers reference every launcher,
+so CI's existing devour-flake build includes their closures.
+
+Consumers can use `profiles.<name>` and
+`lib.mkLaunchers { pkgs; profile; }`, which returns `omp`, `codex`, `claude`,
+and `picker`. For example, override `gateway = null` in the resolved Juspay
+profile to retain its plugins without gateway initialization.
+
+See the [profiles design](design/profiles.md) for the implemented refactor and
+future phases.
