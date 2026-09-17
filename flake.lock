@@ -111,11 +111,11 @@
     "juspay-skills": {
       "flake": false,
       "locked": {
-        "lastModified": 1789594162,
-        "narHash": "sha256-fliaXQxlwRiRLjIZIDbGRTRcluQV4uW2xY9a0wqtodY=",
+        "lastModified": 1789650886,
+        "narHash": "sha256-5y84UUkBb97AxDFZeJo37K02Ynij3xw9XthSoBF5nHY=",
         "owner": "juspay",
         "repo": "skills",
-        "rev": "8e28b62d08a0a7f37bc7be5925b999f2e9f27c60",
+        "rev": "64df453b9b787cbb7b9e8e575ba09da7b9b732df",
         "type": "github"
       },
       "original": {
@@ -127,11 +127,11 @@
     "kolu": {
       "flake": false,
       "locked": {
-        "lastModified": 1789597185,
-        "narHash": "sha256-p/JIQfzRnVXKdLxc3MLXNt9HPuJSPi+OEmOnmVhvKJA=",
+        "lastModified": 1789601902,
+        "narHash": "sha256-fcOXbABW+OktQCsbrE7opxFNfhyfED91KzyHk6f6rzE=",
         "owner": "juspay",
         "repo": "kolu",
-        "rev": "aa6043fd68ebbb678fed2499cea8478f4e548d26",
+        "rev": "1bd2645bb04bca8a2997651df5e4cb86b95ccc2b",
         "type": "github"
       },
       "original": {
@@ -203,16 +203,16 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1789574815,
-        "narHash": "sha256-ZE2cMT0TilNQOD0ap22pLk+0MtW6e9kGPUH11oWjJxw=",
+        "lastModified": 1789633504,
+        "narHash": "sha256-z07Nx7SUtdqcIc+Py5xwr6xZz4sDwply69dbhyTJ1L4=",
         "owner": "can1357",
         "repo": "oh-my-pi",
-        "rev": "60c9a115b2e8decc0f75825459362d14188a8bc0",
+        "rev": "1c0303b1f2ec515cbf4b44a9a49d68a029531aac",
         "type": "github"
       },
       "original": {
         "owner": "can1357",
-        "ref": "v18.2.2",
+        "ref": "v18.2.4",
         "repo": "oh-my-pi",
         "type": "github"
       }
