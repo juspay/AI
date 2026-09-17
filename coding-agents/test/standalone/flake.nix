@@ -18,6 +18,8 @@
     {
       checks.${system} = {
         omp = mkTest ./test-omp.nix;
+        codex = mkTest ./test-codex.nix;
+        picker = mkTest ./test-picker.nix;
       };
     };
 }

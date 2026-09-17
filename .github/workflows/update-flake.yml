@@ -16,6 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Read the pinned Codex version
+        id: codex-before
+        run: |
+          echo "version=$(nix eval --raw .#codex.version)" >> "$GITHUB_OUTPUT"
+
       # oh-my-pi is pinned to a release *tag*, and a tag is invisible to
       # `nix flake update`: the ref in flake.nix has to move first, or the
       # lock's `oh-my-pi` entry would re-resolve to the tag it is already on,
@@ -65,6 +72,8 @@ jobs:
           # opens is then about the other inputs. Emitted here, as outputs, for
           # the one reason that matters: the update step below cannot re-resolve
           # a tag, so this is the only place that knows both versions.
+          # Markdown backticks in printf formats are literal.
+          # shellcheck disable=SC2016
           case "$pin" in
             bumped)
               title="chore(flake): update inputs (oh-my-pi $current → $tag)"
@@ -86,8 +95,6 @@ jobs:
             printf '%s\n' "$note"
             echo "NOTE"
           } >> "$GITHUB_OUTPUT"
-
-      - uses: DeterminateSystems/nix-installer-action@main
 
       - uses: DeterminateSystems/update-flake-lock@main
         id: update
@@ -114,6 +121,30 @@ jobs:
           commit-msg: "chore(flake): update inputs"
           pr-labels: dependencies
           pr-assignees: ${{ github.repository_owner }}
+
+      # Read the PR's commit: create-pull-request may restore the checkout after
+      # pushing. Neither that checkout nor "latest" reliably names the PR build.
+      - name: Describe the Codex update
+        if: steps.update.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ steps.update.outputs.pull-request-number }}
+          BEFORE: ${{ steps.codex-before.outputs.version }}
+        run: |
+          revision=$(gh pr view "$PR" --json headRefOid --jq .headRefOid)
+          after=$(nix eval --raw "github:$GITHUB_REPOSITORY/$revision#codex.version")
+          title=$(gh pr view "$PR" --json title --jq .title)
+          body=$(mktemp)
+          gh pr view "$PR" --json body --jq .body > "$body"
+          # Markdown backticks in printf formats are literal.
+          # shellcheck disable=SC2016
+          if [ "$BEFORE" = "$after" ]; then
+            printf '\n**Codex unchanged (`%s`)** — packaging and dependency updates may still be included.\n' "$after" >> "$body"
+          else
+            title="$title; Codex $BEFORE → $after"
+            printf '\n**Codex `%s` → `%s`**\n\n- package: https://github.com/sadjow/codex-cli-nix\n- release notes: https://github.com/openai/codex/releases/tag/rust-v%s\n' "$BEFORE" "$after" "$after" >> "$body"
+          fi
+          gh pr edit "$PR" --title "$title" --body-file "$body"
 
   # Run the exact same CI (nix build + VM tests, ubuntu + macos) against the
   # bumped lock. A pull_request run of ci.yml for a github-actions[bot] PR only

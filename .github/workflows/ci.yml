@@ -52,9 +52,9 @@ jobs:
             --override-input flake .)
           attic push oss "$outs"
 
-      - name: nix build Oh My Pi
+      - name: Build picker and both agents
         run: |
-          nix build --print-build-logs .#default
+          nix build --print-build-logs .#default .#omp .#codex
 
       - name: Wrapper package tests
         # The wrapper tests boot NixOS VMs, so they only run where a Linux

@@ -1,5 +1,5 @@
 {
-  description = "One-click Oh My Pi on Juspay's LLM gateway";
+  description = "Oh My Pi and Codex with shared skills and plugins";
 
   nixConfig = {
     extra-substituters = "https://cache.nixos.asia/oss";
@@ -13,12 +13,15 @@
     # reproducible in between.
     oh-my-pi.url = "github:can1357/oh-my-pi/v18.2.4";
 
+    # Tracks the packaging repo's current release binary. Keep its own nixpkgs
+    # so Codex packaging updates do not depend on OMP's build dependencies.
+    codex-cli.url = "github:sadjow/codex-cli-nix";
+
     # Upstream's package set, followed rather than shadowed. omp is built from
     # source there, so its derivation hash is the interface to every binary
     # cache — ours included — and overriding `oh-my-pi.inputs.nixpkgs` would
-    # re-key that derivation for nothing. Following it here also leaves this
-    # repo with a single package set: the wrapper and the VM tests then use the
-    # very glibc the omp binary was linked against, instead of a second, newer
+    # re-key that derivation for nothing. Following it here keeps the
+    # wrappers and VM tests on the same package set, using the very glibc the omp binary was linked against, instead of a second, newer
     # one that could drift the other way.
     nixpkgs.follows = "oh-my-pi/nixpkgs";
 
@@ -35,7 +38,7 @@
     kolu = { url = "github:juspay/kolu"; flake = false; };
   };
 
-  outputs = { self, nixpkgs, oh-my-pi, juspay-skills, kolu }:
+  outputs = { self, nixpkgs, oh-my-pi, codex-cli, juspay-skills, kolu }:
     let
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
@@ -52,20 +55,24 @@
           skillsPlugin = pkgs.callPackage ./coding-agents/plugin.nix {
             inherit juspay-skills;
           };
+          plugins = [ skillsPlugin "${kolu}/agent-plugin" ];
           omp = pkgs.callPackage ./coding-agents/omp {
             initialization = pkgs.callPackage ./coding-agents/omp/juspay.nix {
               inherit gateway ensureApiKey;
             };
-            plugins = [ skillsPlugin "${kolu}/agent-plugin" ];
+            inherit plugins;
             # Upstream's own build, on upstream's own package set. We only wrap
             # it; the arg is spelled out because nothing in `pkgs` provides it.
             omp = oh-my-pi.packages.${system}.default;
           };
+          codex = pkgs.callPackage ./coding-agents/codex {
+            inherit plugins;
+            codex = codex-cli.packages.${system}.default;
+          };
         in
         {
-          default = omp;
-          # One package, also available under the name users type.
-          inherit omp;
+          default = pkgs.callPackage ./coding-agents/picker.nix { inherit omp codex; };
+          inherit omp codex;
         }
       );
 
