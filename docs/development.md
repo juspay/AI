@@ -4,6 +4,7 @@
 
 ```bash
 nix build .#default .#omp .#codex
+python3 .github/scripts/test-update-flake.py
 just test    # NixOS VM tests; Linux with KVM
 just demo    # OMP screencast; requires LITELLM_API_KEY
 ```
@@ -13,6 +14,12 @@ gateway defaults and opt-out, Codex tests cover native plugins and persistent
 user state, and the picker is exercised through a PTY.
 
 ## Daily updates
+
+CI installs upstream Nix with `cachix/install-nix-action`. The update job runs
+`nix flake update` directly and uses `peter-evans/create-pull-request` to publish
+the resulting pins and version report. OMP release selection emits only version
+facts; PR formatting consumes those facts after all inputs are locked. Release
+policy and report wording live in separate scripts under `.github/scripts/`.
 
 This flake's `flake.lock` is **auto-updated daily** via CI, so you always get the
 latest packaged Codex, omp release, skills and kolu plugin. The job runs a plain

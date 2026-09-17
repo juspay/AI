@@ -16,135 +16,53 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ github.token }}
 
       - name: Read the pinned Codex version
         id: codex-before
         run: |
-          echo "version=$(nix eval --raw .#codex.version)" >> "$GITHUB_OUTPUT"
+          version=$(nix eval --raw .#codex.version)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      # oh-my-pi is pinned to a release *tag*, and a tag is invisible to
-      # `nix flake update`: the ref in flake.nix has to move first, or the
-      # lock's `oh-my-pi` entry would re-resolve to the tag it is already on,
-      # forever. So resolve upstream's latest release here and rewrite that ref;
-      # the update step below then locks it — it commits the whole worktree, so
-      # this edit rides along in the same PR. Pinning a tag (rather than main)
-      # is what makes "the latest release" and "what we build" the same thing.
-      - name: Track the latest oh-my-pi release
+      - name: Advance the oh-my-pi release pin
         id: omp
         env:
           GH_TOKEN: ${{ github.token }}
+        run: bash .github/scripts/advance-omp-pin.sh
+
+      - name: Update all inputs
+        id: lock
+        shell: bash
         run: |
-          tag=$(gh release view --repo can1357/oh-my-pi --json tagName --jq .tagName)
-          echo "Latest oh-my-pi release: $tag"
-          # An empty or unexpected answer must stop here: the ref below would
-          # otherwise be rewritten to something that is not a tag at all.
-          case "$tag" in
-            v[0-9]*) ;;
-            *) echo "error: 'oh-my-pi' has no usable release tag ($tag)" >&2; exit 1 ;;
-          esac
-          current=$(sed -n 's|.*oh-my-pi\.url = "github:can1357/oh-my-pi/\([^"]*\)";.*|\1|p' flake.nix)
-          # Only ever move the pin forward. A GitHub release trails the tag it
-          # belongs to (v18.2.0's went up 50 minutes later; v18.2.1 was tagged
-          # before its release existed), so "latest release" is occasionally
-          # *older* than the tag we already pin — re-pinning it would trade a
-          # building flake for a broken one. The pin catches up on the next run
-          # after upstream publishes.
-          if [ "$current" = "$tag" ]; then
-            echo "Already pinned to release $tag; nothing to move."
-            pin=same
-          elif [ "$(printf '%s\n%s\n' "$current" "$tag" | sort -V | tail -n1)" != "$tag" ]; then
-            echo "Pinned $current is not behind release $tag; leaving it alone."
-            pin=ahead
-          else
-            url="github:can1357/oh-my-pi/$tag"
-            sed -i "s|\(oh-my-pi\.url = \)\"[^\"]*\"|\1\"$url\"|" flake.nix
-            # A ref that stops matching must fail the job, not open a PR that
-            # silently pins nothing.
-            grep -qF "oh-my-pi.url = \"$url\";" flake.nix
-            pin=bumped
-          fi
+          nix flake update --log-format raw 2>&1 | tee "$RUNNER_TEMP/flake-update.log"
+          version=$(nix eval --raw .#codex.version)
+          echo "codex-version=$version" >> "$GITHUB_OUTPUT"
 
-          # The PR's title and body name the release the pin is at, and the one
-          # it moves to. The lock diff below them cannot: it is a pair of commit
-          # hashes, and the tag those hashes were resolved from lives only in
-          # flake.nix. A run that moves nothing says *that* instead — the PR it
-          # opens is then about the other inputs. Emitted here, as outputs, for
-          # the one reason that matters: the update step below cannot re-resolve
-          # a tag, so this is the only place that knows both versions.
-          # Markdown backticks in printf formats are literal.
-          # shellcheck disable=SC2016
-          case "$pin" in
-            bumped)
-              title="chore(flake): update inputs (oh-my-pi $current → $tag)"
-              note=$(printf '**oh-my-pi `%s` → `%s`**\n\n- flake.nix pin: `github:can1357/oh-my-pi/%s` → `github:can1357/oh-my-pi/%s`\n- release notes: https://github.com/can1357/oh-my-pi/releases/tag/%s' \
-                "$current" "$tag" "$current" "$tag" "$tag")
-              ;;
-            ahead)
-              title="chore(flake): update inputs"
-              note=$(printf '**oh-my-pi unchanged (`%s`)** — the latest upstream release is `%s`, and the pin only ever moves forward.' "$current" "$tag")
-              ;;
-            same)
-              title="chore(flake): update inputs"
-              note=$(printf '**oh-my-pi unchanged (`%s`)** — the pin already tracks the latest upstream release.' "$current")
-              ;;
-          esac
-          {
-            echo "pr-title=$title"
-            echo "pr-note<<NOTE"
-            printf '%s\n' "$note"
-            echo "NOTE"
-          } >> "$GITHUB_OUTPUT"
+      - name: Describe the locked versions
+        id: report
+        env:
+          OMP_BEFORE: ${{ steps.omp.outputs.before }}
+          OMP_AFTER: ${{ steps.omp.outputs.after }}
+          OMP_LATEST: ${{ steps.omp.outputs.latest }}
+          CODEX_BEFORE: ${{ steps.codex-before.outputs.version }}
+          CODEX_AFTER: ${{ steps.lock.outputs.codex-version }}
+        run: python3 .github/scripts/describe-flake-update.py
 
-      - uses: DeterminateSystems/update-flake-lock@main
+      - uses: peter-evans/create-pull-request@v8
         id: update
         with:
           branch: update_flake_lock_action
-          # Title and body come from the step above. The body is this action's
-          # own — its commit message body is the per-input lock diff, which the
-          # `GIT_COMMIT_MESSAGE` placeholder expands — with the release named in
-          # front of it, since a diff of revisions does not say which release
-          # they belong to.
-          pr-title: ${{ steps.omp.outputs.pr-title }}
-          pr-body: |
-            Automated changes by the [update-flake-lock](https://github.com/DeterminateSystems/update-flake-lock) GitHub Action.
-
-            ${{ steps.omp.outputs.pr-note }}
-
-            ```
-            {{ env.GIT_COMMIT_MESSAGE }}
-            ```
-
-            ### CI on this PR
-
-            CI runs against this branch inside the [Update Flake](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) workflow that opened it, which squash-merges the PR when the build passes. No workflow on the PR itself needs approving.
-          commit-msg: "chore(flake): update inputs"
-          pr-labels: dependencies
-          pr-assignees: ${{ github.repository_owner }}
-
-      # Read the PR's commit: create-pull-request may restore the checkout after
-      # pushing. Neither that checkout nor "latest" reliably names the PR build.
-      - name: Describe the Codex update
-        if: steps.update.outputs.pull-request-number != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR: ${{ steps.update.outputs.pull-request-number }}
-          BEFORE: ${{ steps.codex-before.outputs.version }}
-        run: |
-          revision=$(gh pr view "$PR" --json headRefOid --jq .headRefOid)
-          after=$(nix eval --raw "github:$GITHUB_REPOSITORY/$revision#codex.version")
-          title=$(gh pr view "$PR" --json title --jq .title)
-          body=$(mktemp)
-          gh pr view "$PR" --json body --jq .body > "$body"
-          # Markdown backticks in printf formats are literal.
-          # shellcheck disable=SC2016
-          if [ "$BEFORE" = "$after" ]; then
-            printf '\n**Codex unchanged (`%s`)** — packaging and dependency updates may still be included.\n' "$after" >> "$body"
-          else
-            title="$title; Codex $BEFORE → $after"
-            printf '\n**Codex `%s` → `%s`**\n\n- package: https://github.com/sadjow/codex-cli-nix\n- release notes: https://github.com/openai/codex/releases/tag/rust-v%s\n' "$BEFORE" "$after" "$after" >> "$body"
-          fi
-          gh pr edit "$PR" --title "$title" --body-file "$body"
+          delete-branch: true
+          add-paths: |
+            flake.nix
+            flake.lock
+          title: ${{ steps.report.outputs.pr-title }}
+          body-path: ${{ steps.report.outputs.pr-body-path }}
+          commit-message: "chore(flake): update inputs"
+          labels: dependencies
+          assignees: ${{ github.repository_owner }}
 
   # Run the exact same CI (nix build + VM tests, ubuntu + macos) against the
   # bumped lock. A pull_request run of ci.yml for a github-actions[bot] PR only
