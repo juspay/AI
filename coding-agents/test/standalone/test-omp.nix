@@ -1,6 +1,9 @@
 { ai }:
 let
   common = import ./common.nix;
+  skillEntries = builtins.readDir "${ai.inputs.juspay-skills}/skills";
+  bundledSkills = builtins.filter (name: skillEntries.${name} == "directory")
+    (builtins.attrNames skillEntries);
 in
 {
   name = "omp";
@@ -8,7 +11,7 @@ in
   nodes.machine = { pkgs, ... }: {
     imports = [ common.baseNode ];
     environment.systemPackages = [
-      ai.packages.${pkgs.stdenv.hostPlatform.system}.default
+      ai.packages.${pkgs.stdenv.hostPlatform.system}.omp
 
       # Asks OMP which skills it loaded, by driving a real session over ACP and
       # reading the /skill:<name> command it registers per discovered skill.
@@ -47,32 +50,18 @@ in
 
   testScript = ''
     import json
-    import re
     import shlex
 
     ${common.testPreamble}
-    ${common.probe}
 
     CONFIG = "/home/testuser/.omp/agent/config.yml"
 
     def loaded_skills():
         """The skills OMP itself reports having loaded.
 
-        Every other assertion in these tests reads a file *we* generate, so they
-        all sit on this repo's clock. OMP sits on its own: upstream cuts several
-        releases a week, and each one reaches us as a release-tag bump in
-        flake.nix -> flake.lock -> an auto-merged PR. Its CLI surface does move —
-        `skills.customDirectories` -> `extensions:` -> `-e` is exactly what this
-        wiring has already chased twice. OMP ignores an unrecognised flag
-        target silently, so if a future release stops scanning `skills/` beside
-        `-e` roots, our wrapper still builds, still looks right, and every user
-        gets an agent with no skills at all.
-
-        This is the one check on OMP's side of that boundary, which is why it
-        lives beside the omp-list-skills script it drives rather than in the
-        shared preamble. It answers "did OMP load these?" rather than "did we
-        write the flags we think we wrote?". No network needed: skill discovery
-        happens before any model call.
+        OMP's discovery protocol changes independently of our plugin contents.
+        Read the actual session commands, not generated wrapper shell source.
+        Skill discovery happens before any model call, so no network is needed.
         """
         return set(machine.succeed("su - testuser -c omp-list-skills").split())
 
@@ -102,51 +91,9 @@ in
     version = machine.succeed("su - testuser -c 'omp --version'")
     print(f"omp version: {version}")
 
-    script = wrapper_script("omp")
-    for setting in ["export LITELLM_BASE_URL=https://grid.ai.juspay.net", "export LITELLM_API_KEY", "export OMP_SKIP_SETUP=1"]:
-        if setting not in script:
-            raise Exception(f"{setting!r} not found in wrapper")
-    print("✅ wrapper points omp at the gateway")
-
-    # Extensions reach omp on the command line, not through a config file: `-e`
-    # composes with whatever `extensions:` the user writes, where a generated
-    # `extensions:` would be replaced wholesale by theirs. Check the flags name
-    # roots that actually exist — a stale or empty path would load nothing, and
-    # omp says nothing about it.
-    #
-    # There are exactly two, in a fixed order, and they are different kinds of
-    # thing: our composed Agent Plugins bundle, then kolu's package taken
-    # verbatim out of juspay/kolu.
-    # Anchored on /nix/store so the `[ ! -e "$agent_dir/…" ]` test above — the
-    # other `-e` in this script, and a different `-e` entirely — cannot match.
-    roots = re.findall(r'-e "(/nix/store/[^"]+)"', script)
-    if len(roots) != 2:
-        raise Exception(f"expected two -e roots in the wrapper, got {roots}:\n{script}")
-    bundle, kolu_root = roots
-    if not bundle.endswith("-omp-juspay-skills-plugin"):
-        raise Exception(f"first -e root is not this repo's skills bundle: {bundle}")
-    machine.succeed(f"test -d {bundle}/skills")
-    manifest = json.loads(machine.succeed(f"cat {bundle}/plugin.json"))
-    assert manifest == {
-        "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-        "name": "omp-juspay-skills",
-    }, manifest
-    bundled_skills = set(machine.succeed(f"ls -1 {bundle}/skills").split())
-    print(f"✅ wrapper loads this repo's skills with -e {bundle}")
-
-    # kolu is no longer harvested into our bundle — if it reappears there, the
-    # standard package below is being shadowed by a copy nobody maintains.
-    machine.fail(f"test -e {bundle}/skills/kolu")
-
-    # The kolu root is a whole Agent Plugins 1.0.0 package, and every file omp's
-    # standard provider reads out of it has to be present: the manifest that
-    # classifies the root, the MCP document beside it, and the skill.
-    for rel in ["plugin.json", "mcp.json", "skills/kolu/SKILL.md"]:
-        machine.succeed(f"test -f {kolu_root}/{rel}")
-    mcp = json.loads(machine.succeed(f"cat {kolu_root}/mcp.json"))
-    if "kolu" not in mcp.get("mcpServers", {}):
-        raise Exception(f"kolu's mcp.json no longer declares a `kolu` server:\n{mcp}")
-    print(f"✅ wrapper loads kolu's agent plugin with -e {kolu_root}")
+    # Missing credentials must fail before launching OMP or changing config.
+    for key in ["-u LITELLM_API_KEY", "LITELLM_API_KEY="]:
+        machine.fail(f"su - testuser -c 'env {key} omp --version </dev/null'")
 
     def run_as_user(command):
         return machine.succeed("su - testuser -c " + shlex.quote(command))
@@ -157,31 +104,18 @@ in
     def effective_setting(key):
         """The value omp itself resolves for `key`, from the global layer.
 
-        Every other config assertion here reads the file *we* wrote, so they all
-        agree with each other even when omp disagrees with them — a setting
-        spelled or nested differently, or dropped upstream, would sit in
-        config.yml looking right and change nothing. `omp config get` runs the
-        same Settings.init() every session does, so this is where the wrapper's
-        defaults stop being text and become behaviour. JSON because a value of
-        the wrong type must not pass as a coercion of the right one.
+        Query the agent's settings resolver rather than matching YAML spelling.
         """
         return json.loads(run_as_user(f"omp config get {key} --json"))["value"]
 
-    # The config is the user's own ~/.omp/agent/config.yml now, not a per-run
-    # temp dir: sessions, auth and onboarding persist beside it and `/model`
-    # writes land somewhere that survives the next launch.
-    machine.succeed(f"test -f {CONFIG}")
-    config = machine.succeed(f"cat {CONFIG}")
-    for role, model in {"default": "open-large", "smol": "open-fast", "task": "open-large", "slow": "open-large"}.items():
-        assert f"{role}: litellm/{model}" in config, config
-    # Nested, not the flat "task.showResolvedModelBadge" spelling: OMP resolves
-    # a dotted setting path by walking the document, so the group has to be a
-    # mapping. A flat key would sit there looking right and never be read.
-    assert re.search(r"^task:\n  showResolvedModelBadge: true$", config, re.M), config
+    assert effective_setting("modelRoles") == {
+        "default": "litellm/open-large",
+        "smol": "litellm/open-fast",
+        "task": "litellm/open-large",
+        "slow": "litellm/open-large",
+    }
     assert effective_setting("task.showResolvedModelBadge") is True
     machine.fail("test -e /home/testuser/.omp/agent/models.yml")
-    print("✅ fresh config has explicit primary, worker and reviewer roles, and the resolved model badge omp resolves as on")
-
     # Reproduce an existing wizard config with an expensive primary. Preserve
     # unrelated settings and comments while adding all background roles and the
     # display defaults.
@@ -228,21 +162,13 @@ in
         assert machine.succeed(f"cat {relocated}") == invalid
     print("✅ existing roles, settings and comments survive migration; invalid config stays untouched")
 
-    # The assertion that matters. Everything above reads something we generated;
-    # this asks omp. It subsumes checking that the wrapper still passes `-e` and
-    # still points at the plugin — both of those fail here too, verified by
-    # negative control (dropping `-e` loads none of these skills) — and only
-    # this one also catches omp changing what `-e` roots mean for skills.
+    # Check every source skill through the real adapter, plus kolu's separate
+    # plugin. An empty or truncated bundle must not lower the expectation.
     skills = loaded_skills()
-    # Standard discovery validates frontmatter more strictly than the legacy
-    # provider. Check every bundled skill, so a rejected skill cannot hide
-    # behind the representative names in PROMISED_SKILLS.
-    expected_skills = bundled_skills | {"kolu"}
+    expected_skills = set(${builtins.toJSON bundledSkills}) | {"kolu"}
     assert skills == expected_skills, f"expected {sorted(expected_skills)}, loaded {sorted(skills)}"
-    missing = [s for s in PROMISED_SKILLS if s not in skills]
-    if missing:
-        raise Exception(f"omp did not load {missing} via -e (loaded {sorted(skills)})")
-    print(f"✅ omp loaded {len(skills)} skills through -e, including {PROMISED_SKILLS}")
+    assert {"nix-haskell", "kolu"} <= skills
+    print(f"OMP loaded all {len(skills)} expected skills")
 
     # `kolu` in that set is already more than a skill check. A root whose
     # `plugin.json` targets the Agent Plugins standard is handled by the

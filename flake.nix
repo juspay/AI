@@ -22,10 +22,8 @@
     # one that could drift the other way.
     nixpkgs.follows = "oh-my-pi/nixpkgs";
 
-    # Skill sources. Not flakes — each is a plain tree we read `skills/` out of
-    # when building the OMP plugin (coding-agents/omp/plugin.nix). Nothing is
-    # vendored into this repo. juspay/skills ships an Agent Plugins manifest,
-    # but we copy only its skills into our composed bundle.
+    # Portable skill sources. Nothing is vendored into this repo; the shared
+    # bundle copies juspay/skills, while kolu's plugin is passed through whole.
     juspay-skills = { url = "github:juspay/skills"; flake = false; };
 
     # kolu, for its `agent-plugin/` directory: a standard Agent Plugins 1.0.0
@@ -47,16 +45,16 @@
       packages = forAllSystems (system:
         let
           pkgs = pkgsFor system;
-          # The skills, built in the store as an OMP plugin package. OMP takes
-          # the package itself, via `extensions:`.
-          skillsPlugin = pkgs.callPackage ./coding-agents/omp/plugin.nix {
+          gateway = import ./coding-agents/gateway.nix;
+          ensureApiKey = pkgs.callPackage ./coding-agents/ensure-api-key.nix {
+            inherit gateway;
+          };
+          skillsPlugin = pkgs.callPackage ./coding-agents/plugin.nix {
             inherit juspay-skills;
           };
           omp = pkgs.callPackage ./coding-agents/omp {
-            inherit skillsPlugin;
-            # kolu's Agent Plugins package, handed to omp as a second extension
-            # root exactly as kolu ships it. See coding-agents/omp/default.nix.
-            koluPlugin = "${kolu}/agent-plugin";
+            inherit gateway ensureApiKey;
+            plugins = [ skillsPlugin "${kolu}/agent-plugin" ];
             # Upstream's own build, on upstream's own package set. We only wrap
             # it; the arg is spelled out because nothing in `pkgs` provides it.
             omp = oh-my-pi.packages.${system}.default;

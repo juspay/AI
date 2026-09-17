@@ -1,8 +1,7 @@
 # AI
 
 One-click **[Oh My Pi (OMP)](https://github.com/can1357/oh-my-pi)** on Juspay's
-LLM gateway, with skills bundled. Skills are built at build time from these
-sources into an OMP plugin (see [Skills](#skills)):
+LLM gateway, with portable skills and plugins bundled (see [Skills](#skills)).
 
 - [juspay/skills](https://github.com/juspay/skills) — Shared AI agent skills
 - [juspay/kolu](https://github.com/juspay/kolu) — the `kolu` agent plugin: terminal automation skill **and** MCP server
@@ -34,7 +33,8 @@ subsequent runs.
 
 The wrapper is a short shell script
 ([`coding-agents/omp/default.nix`](coding-agents/omp/default.nix)) around
-upstream omp. It:
+upstream omp. It translates shared gateway policy and plugin packages into
+OMP's environment, settings, and CLI:
 
 1. **Ensures the gateway key**, prompting for `LITELLM_API_KEY` if it is unset.
 2. **Points omp at the gateway** with `LITELLM_BASE_URL`. OMP ships LiteLLM
@@ -43,7 +43,7 @@ upstream omp. It:
    What the model picker shows is what your key can actually call, with the
    limits the gateway enforces.
 3. **Loads two extension roots** on omp's own command line — the store-built
-   skills bundle (`-e /nix/store/…-omp-juspay-skills-plugin`) and kolu's own
+   skills bundle (`-e /nix/store/…-juspay-skills-plugin`) and kolu's own
    agent plugin (`-e /nix/store/…/agent-plugin`). CLI extension roots are added
    to whatever `extensions:` your settings already list, so these and your own
    extensions compose.
@@ -91,17 +91,18 @@ Nothing listed at the top is **vendored into this repo**, and the two sources
 arrive two different ways.
 
 **The bundle we compose.** juspay/skills is a plain tree;
-[`coding-agents/omp/plugin.nix`](coding-agents/omp/plugin.nix) copies it in
+[`coding-agents/plugin.nix`](coding-agents/plugin.nix) copies it in
 the Nix store into one directory that Oh My Pi loads as an **extension**:
 ```
-/nix/store/...-omp-juspay-skills-plugin/
+/nix/store/...-juspay-skills-plugin/
+├── plugin.json                 # Agent Plugins 1.0.0 manifest
 └── skills/
-    └── nix-haskell/SKILL.md      # …and the rest of juspay/skills
+    └── nix-haskell/SKILL.md     # …and the rest of juspay/skills
 ```
 
-The layout is the whole contract. The wrapper passes that directory to omp as
-`-e <dir>`, and OMP scans `skills/<name>/SKILL.md` beside every extension root —
-one level deep, non-recursively, with `skills` hardcoded in OMP. It goes on the
+The bundle uses the portable Agent Plugins format, not an OMP-specific package.
+The OMP adapter passes it as `-e <dir>`; OMP discovers the manifest and scans
+`skills/<name>/SKILL.md` one level deep, non-recursively. It goes on the
 command line rather than into `config.yml` because OMP replaces arrays wholesale
 between config layers: an `extensions:` list written by the wrapper would be
 dropped the moment you added your own.
@@ -162,16 +163,40 @@ just demo    # re-record the demo screencast (needs LITELLM_API_KEY)
 ## Repo Structure
 
 ```
+├── flake.nix                 # Pins, package composition, public default/omp outputs
 ├── coding-agents/
+│   ├── gateway.nix          # Gateway URL and recommended model aliases
+│   ├── ensure-api-key.nix   # Shared gateway credential prompt
+│   ├── plugin.nix           # Portable Agent Plugins skills bundle
 │   ├── omp/
-│   │   ├── default.nix       # The package: gateway policy + wrapper shell
-│   │   └── plugin.nix        # The skill bundle, built in the store
-│   └── test/standalone/      # Wrapper package test (NixOS VM flake)
-├── demo/                     # Demo screencast infrastructure
+│   │   ├── default.nix      # OMP environment, role mapping, settings and CLI
+│   │   └── fill-config-defaults.py # Preserve user YAML while filling absent keys
+│   └── test/standalone/     # Wrapper integration tests (NixOS VM flake)
+├── demo/                    # Demo screencast infrastructure
 ```
 
 The skill sources are fetched into the store and loaded as OMP extension roots
 — see [Skills](#skills). Nothing is committed to this repo.
+
+### Boundaries for another agent
+
+Gateway policy, credential acquisition, and portable plugin contents are shared.
+Each agent adapter owns its provider names, model-role mapping, configuration
+format and location, and plugin-loading interface. The YAML merger stays under
+OMP: another agent need not use YAML or share OMP's settings semantics.
+
+To add an agent, put its adapter under `coding-agents/<agent>/` and compose its
+upstream package with the shared resources in `flake.nix`. The credential helper
+provides `LITELLM_API_KEY`; an adapter translates that credential and the gateway
+URL to whatever its client expects. Share portable plugins only where the client
+supports them; translate their loading interface in the adapter, not in the
+bundle. Add a named package/app and agent-specific integration checks without
+changing `default = omp`.
+
+This follows the [Hickey/Löwy distinction](https://kolu.dev/blog/hickey-lowy/):
+separate concepts that are tangled today, and isolate gateway decisions from
+upstream agent protocols that change independently. There is no agent registry
+or universal wrapper API; the flake is the composition point.
 
 ## Related
 
