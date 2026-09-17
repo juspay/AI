@@ -48,22 +48,19 @@ upstream omp. It:
    agent plugin (`-e /nix/store/…/agent-plugin`). CLI extension roots are added
    to whatever `extensions:` your settings already list, so these and your own
    extensions compose.
-4. **Seeds the model roles, once.** On the first launch, if
-   `~/.omp/agent/config.yml` does not exist, the wrapper creates it containing
-   the `default` / `smol` roles (`glm-latest` and `open-fast`) and nothing else,
-   so omp does not start on whatever model it finds first.
+4. **Fills missing model roles on every launch.** In `~/.omp/agent/config.yml`,
+   absent `default` / `smol` roles get `litellm/open-fast`, and absent `task` /
+   `slow` roles get `litellm/open-large`. This also repairs older configs so
+   workers and reviewers have explicit defaults independent of the primary.
 
-That config file is **yours** from then on. It is omp's ordinary global settings
-file — the one `/model` and `/settings` write to — and the wrapper never touches
-it again, so model switches, sessions, auth and onboarding state all persist
-across runs. Edit it freely; the wrapper only ever adds the file if it is
-missing. To start over, delete it and launch again:
+That config file is **yours** — the ordinary settings file `/model` and
+`/settings` write to. Existing role assignments, unrelated settings, and YAML
+comments are preserved. When all roles are present, the file is not rewritten.
+Sessions, auth and onboarding state persist across runs. Removing a role makes
+it receive the wrapper default on the next launch; edit its value to choose a
+custom model. Invalid YAML is reported without modifying the file.
 
-```bash
-rm ~/.omp/agent/config.yml   # next launch re-seeds the roles
-```
-
-(If you already export `PI_CODING_AGENT_DIR`, the wrapper seeds there instead.)
+(If you export `PI_CODING_AGENT_DIR`, the wrapper fills roles there instead.)
 
 If you run omp yourself rather than through the wrapper, those same two
 variables are all it needs:

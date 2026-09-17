@@ -48,6 +48,7 @@ in
   testScript = ''
     import json
     import re
+    import shlex
 
     ${common.testPreamble}
     ${common.probe}
@@ -146,23 +147,55 @@ in
     # writes land somewhere that survives the next launch.
     machine.succeed(f"test -f {CONFIG}")
     config = machine.succeed(f"cat {CONFIG}")
-    if "default: litellm/glm-latest" not in config:
-        raise Exception(f"config.yml was not seeded with the default model role:\n{config}")
-    # The model list itself is the gateway's, discovered at runtime, so a
-    # vendored models file must not reappear beside it.
+    for role, model in {"default": "open-fast", "smol": "open-fast", "task": "open-large", "slow": "open-large"}.items():
+        assert f"{role}: litellm/{model}" in config, config
     machine.fail("test -e /home/testuser/.omp/agent/models.yml")
-    print("✅ first launch seeds the real agent config with the model roles")
+    print("✅ fresh config has explicit primary, worker and reviewer roles")
 
-    # Seeded once, never rewritten. This is the whole point of seeding rather
-    # than overlaying: a `--config` overlay would sit *above* this file, and the
-    # user's own edit — or anything `/model` and `/settings` write here — would
-    # look like it silently reverted on the next launch.
-    machine.succeed(f"su - testuser -c \"sed -i 's|smol: .*|smol: litellm/edited-by-user|' {CONFIG}\"")
-    machine.succeed("su - testuser -c 'omp --version'")
+    def run_as_user(command):
+        return machine.succeed("su - testuser -c " + shlex.quote(command))
+
+    def write_config(path, content):
+        run_as_user("printf %s " + shlex.quote(content) + " > " + shlex.quote(path))
+
+    # Reproduce an existing wizard config with an expensive primary. Preserve
+    # unrelated settings and comments while adding all background roles.
+    old_config = "# user settings\nsetupVersion: 2\nmodelRoles:\n  default: 'anthropic/expensive:high' # keep choice\n"
+    write_config(CONFIG, old_config)
+    run_as_user("omp --version")
     config = machine.succeed(f"cat {CONFIG}")
-    if "smol: litellm/edited-by-user" not in config:
-        raise Exception(f"second launch overwrote the user's edit:\n{config}")
-    print("✅ a second launch leaves the user's edits alone")
+    for expected in ["# user settings", "setupVersion: 2", "default: 'anthropic/expensive:high' # keep choice", "smol: litellm/open-fast", "task: litellm/open-large", "slow: litellm/open-large"]:
+        assert expected in config, config
+
+    # A fully configured file must not even be rewritten. /model choices win.
+    custom = config.replace("litellm/open-fast", "litellm/custom-fast").replace("litellm/open-large", "litellm/custom-large")
+    write_config(CONFIG, custom)
+    before = machine.succeed(f"stat -c '%i %Y' {CONFIG}")
+    run_as_user("omp --version")
+    assert machine.succeed(f"cat {CONFIG}") == custom
+    assert machine.succeed(f"stat -c '%i %Y' {CONFIG}") == before
+
+    # Relocated configs get the same migration without changing the normal one.
+    run_as_user("mkdir -p /home/testuser/relocated")
+    relocated = "/home/testuser/relocated/config.yml"
+    write_config(relocated, old_config)
+    run_as_user("PI_CODING_AGENT_DIR=/home/testuser/relocated omp --version")
+    assert "task: litellm/open-large" in machine.succeed(f"cat {relocated}")
+    assert machine.succeed(f"cat {CONFIG}") == custom
+
+    for initial in ["# my settings", "setupVersion: 2\n"]:
+        write_config(relocated, initial)
+        run_as_user("PI_CODING_AGENT_DIR=/home/testuser/relocated omp --version")
+        repaired = machine.succeed(f"cat {relocated}")
+        assert initial in repaired
+        assert "default: litellm/open-fast" in repaired
+        assert "slow: litellm/open-large" in repaired
+
+    for invalid in ["modelRoles: [", "modelRoles: []\n", "modelRoles: null\n"]:
+        write_config(relocated, invalid)
+        machine.fail("su - testuser -c 'PI_CODING_AGENT_DIR=/home/testuser/relocated omp --version'")
+        assert machine.succeed(f"cat {relocated}") == invalid
+    print("✅ existing roles and comments survive migration; invalid config stays untouched")
 
     # The assertion that matters. Everything above reads something we generated;
     # this asks omp. It subsumes checking that the wrapper still passes `-e` and

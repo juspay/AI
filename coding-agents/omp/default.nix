@@ -10,9 +10,9 @@
 # leaves `~/.omp/agent` where OMP puts it, so config, sessions, auth and
 # onboarding persist across runs and the config is the user's file to edit. What
 # the wrapper contributes is layered on top instead of replacing it: skills come
-# in on the command line (`-e`), and the model roles are *seeded once* into a
-# config.yml that does not exist yet. An existing config.yml is never rewritten.
-{ lib, writeShellApplication, formats, gum, coreutils, omp, skillsPlugin, koluPlugin }:
+# in on the command line (`-e`), and absent model roles are filled in
+# config.yml on each launch. Existing role assignments remain the user’s choices.
+{ lib, writeShellApplication, formats, gum, python3, omp, skillsPlugin, koluPlugin }:
 let
   # Juspay gateway policy. There is deliberately no model catalog: OMP ships
   # LiteLLM discovery and asks the gateway at startup what it serves — ids,
@@ -23,14 +23,13 @@ let
   # The models the agent starts on: role assignments, not a catalog. Each must
   # be an id the gateway actually serves — nothing here validates them, and OMP
   # falls back to its own first-available model if one goes missing.
-  defaultModel = "glm-latest";
+  defaultModel = "open-fast";
+  largeModel = "open-large";
   smallModel = "open-fast";
 
-  # The *seed* config: what a first-time user's `~/.omp/agent/config.yml` starts
-  # out as, and nothing more. Only `modelRoles` belongs here. Anything the
-  # wrapper wants on every run has to arrive some other way, because this file
-  # stops being ours the moment it exists — `/settings` and `/model` write to
-  # it, and so does the user's editor.
+  # Defaults are merged only into absent keys, preserving /model and /settings
+  # choices. Use a round-trip YAML parser to retain comments and quoted values.
+  configPython = python3.withPackages (ps: [ ps.ruamel-yaml ]);
   #
   # In particular `extensions:` is NOT here. OMP replaces arrays wholesale when
   # a higher config layer sets them, so a user adding their own extension to
@@ -38,12 +37,14 @@ let
   # freeze a store path that changes on every lock bump. The plugin goes on the
   # command line instead (see `-e` below), which composes with whatever
   # `extensions:` the user ends up writing.
-  seedConfig = (formats.yaml { }).generate "omp-config.yml" {
+  roleDefaults = (formats.yaml { }).generate "omp-config.yml" {
     # Without this OMP starts on its own first-available model; the roles are how
     # our recommendation reaches the agent.
     modelRoles = {
       default = "litellm/${defaultModel}";
       smol = "litellm/${smallModel}";
+      task = "litellm/${largeModel}";
+      slow = "litellm/${largeModel}";
     };
   };
 in
@@ -80,23 +81,13 @@ writeShellApplication {
           export LITELLM_API_KEY
         fi
 
-        # Seed the model roles into OMP's real agent directory, once. This is the
-        # user's `~/.omp/agent/config.yml` — the same file `/settings` and
-        # `/model` write to — so we only ever create it, never rewrite it: a
-        # per-run overlay would put our roles above the user's and make `/model`
-        # look like it silently reverts. The cost is that a config.yml predating
-        # this wrapper (or one the user stripped) gets no roles, and OMP then
-        # starts on its first-available model; `/model` fixes that for good.
-        #
-        # Honour PI_CODING_AGENT_DIR if the user relocated the agent dir, and
-        # fall back to OMP's own default otherwise. Both `:-` guards are for
-        # set -u; with neither variable set there is no directory to seed and
-        # OMP will complain about $HOME on its own terms, not ours.
+        # Fill absent roles in the persistent config, including installations
+        # created before this wrapper. Existing keys always win, so /model
+        # choices survive relaunch. Invalid YAML stops launch without a write.
+        # Honour OMP's relocated agent directory and its default otherwise.
         agent_dir="''${PI_CODING_AGENT_DIR:-''${HOME:-}/.omp/agent}"
-        if [ -n "''${PI_CODING_AGENT_DIR:-}''${HOME:-}" ] && [ ! -e "$agent_dir/config.yml" ]; then
-          ${coreutils}/bin/mkdir -p "$agent_dir"
-          ${coreutils}/bin/cp ${seedConfig} "$agent_dir/config.yml"
-          chmod u+w "$agent_dir/config.yml"
+        if [ -n "''${PI_CODING_AGENT_DIR:-}''${HOME:-}" ]; then
+          ${configPython}/bin/python ${./fill-model-roles.py} "$agent_dir/config.yml" ${roleDefaults}
         fi
 
         # These two are how OMP finds the gateway and asks it what it serves, so the
