@@ -23,9 +23,9 @@ jobs:
       - name: Read the pinned package versions
         id: versions-before
         run: |
-          version=$(nix eval --raw .#juspay.codex.version)
+          version=$(nix eval --raw .#vanilla.codex.version)
           echo "codex-version=$version" >> "$GITHUB_OUTPUT"
-          version=$(nix eval --raw .#juspay.claude.version)
+          version=$(nix eval --raw .#vanilla.claude.version)
           echo "claude-version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Advance the oh-my-pi release pin
@@ -39,9 +39,9 @@ jobs:
         shell: bash
         run: |
           nix flake update --log-format raw 2>&1 | tee "$RUNNER_TEMP/flake-update.log"
-          version=$(nix eval --raw .#juspay.codex.version)
+          version=$(nix eval --raw .#vanilla.codex.version)
           echo "codex-version=$version" >> "$GITHUB_OUTPUT"
-          version=$(nix eval --raw .#juspay.claude.version)
+          version=$(nix eval --raw .#vanilla.claude.version)
           echo "claude-version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Describe the locked versions

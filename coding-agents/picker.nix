@@ -18,14 +18,14 @@ writeShellApplication {
       launch "$AI_HARNESS" "$@"
     fi
     if [ ! -t 0 ]; then
-      echo 'Choose a harness with nix run github:juspay/AI#${profile.name}.omp, github:juspay/AI#${profile.name}.codex, or github:juspay/AI#${profile.name}.claude.' >&2
+      echo "Set AI_HARNESS to omp, codex, or claude, or run that harness's launcher directly." >&2
       exit 1
     fi
 
     printf '%s\n' ${lib.escapeShellArg profile.description} 'Choose a coding agent:' '  1) Oh My Pi' '  2) Codex${ownLogin}' '  3) Claude Code${ownLogin}' >&2
     while true; do
       printf 'Agent [1/2/3] (q to quit): ' >&2
-      read -r choice
+      read -r choice || exit 1
       case "$choice" in
         1|omp) launch omp "$@" ;;
         2|codex) launch codex "$@" ;;

@@ -1,5 +1,5 @@
 {
-  description = "Oh My Pi, Codex, and Claude Code with shared skills and plugins";
+  description = "Oh My Pi, Codex, and Claude Code with selectable profiles";
 
   nixConfig = {
     extra-substituters = "https://cache.nixos.asia/oss";

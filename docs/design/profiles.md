@@ -57,7 +57,7 @@ In-repo profiles:
 | `vanilla` | none | none |
 | `kolu` | kolu | none |
 | `juspay` | juspay/skills, kolu | Juspay LiteLLM |
-| `ekala` | ekala skills | none |
+| `ekala` (planned, phase 1 of Phasing) | ekala skills | none |
 
 `vanilla` is the baseline for public users: the Nix-packaged harnesses with
 daily CI-verified updates and nothing else.
@@ -69,9 +69,6 @@ format converters.
 
 - juspay/skills ships a root `plugin.json`, so the flake input itself is the
   plugin. `coding-agents/plugin.nix`, which rebuilds that manifest, is deleted.
-  Verified: with `plugins = [ juspay-skills "${kolu}/agent-plugin" ]` in
-  `flake.nix`, `just test` passes all four VM checks (omp, codex, claude,
-  picker) and OMP loads all 17 skills.
 - Kolu ships its plugin at `agent-plugin/`, passed through as today.
 - ekala-claude-skills has harness-neutral `skills/<name>/SKILL.md` directories,
   but its only manifest is `.claude-plugin/plugin.json`. We send Ekala a PR

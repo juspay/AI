@@ -37,11 +37,11 @@ def run(*args, **kwargs):
                           capture_output=True, timeout=60, **kwargs)
 
 
-for juspay in [None, '0', '1']:
-    if juspay is None:
+for gateway in [None, '0', '1']:
+    if gateway is None:
         env.pop('AI_GATEWAY', None)
     else:
-        env['AI_GATEWAY'] = juspay
+        env['AI_GATEWAY'] = gateway
     result = run('--version', check=True)
     assert 'codex-cli' in result.stdout, result
     settings = tomllib.loads(config.read_text())

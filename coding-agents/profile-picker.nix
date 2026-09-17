@@ -19,13 +19,13 @@ writeShellApplication {
       launch "$AI_PROFILE" "$@"
     fi
     if [ ! -t 0 ]; then
-      echo 'Choose a profile with ${lib.concatMapStringsSep ", " (name: "nix run github:juspay/AI#${name}") names}; launch directly with ${lib.concatMapStringsSep ", " (name: "#${name}.omp, #${name}.codex, #${name}.claude") names}.' >&2
+      echo 'Set AI_PROFILE (${lib.concatStringsSep ", " names}), or run nix run github:juspay/AI#<profile>.' >&2
       exit 1
     fi
     printf '%s\n' 'Choose a profile:' ${lib.concatMapStringsSep " " (c: lib.escapeShellArg "  ${toString c.i}) ${c.name}: ${profiles.${c.name}.description}") choices} >&2
     while true; do
       printf 'Profile (name or number; q to quit): ' >&2
-      read -r choice
+      read -r choice || exit 1
       case "$choice" in
         ${lib.concatMapStringsSep "\n" (c: ''
           ${toString c.i}|${c.name}) launch ${c.name} "$@" ;;

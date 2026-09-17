@@ -50,3 +50,7 @@ choose(b'vanilla\n', None, b'codex-cli', {'AI_HARNESS': 'codex'})
 choose(None, None, b'codex-cli', {'AI_PROFILE': 'vanilla', 'AI_HARNESS': 'codex'})
 choose(None, None, b'valid values: juspay, kolu, vanilla', {'AI_PROFILE': 'bad'}, status=1)
 choose(None, None, b'valid values: omp, codex, claude', {'AI_PROFILE': 'vanilla', 'AI_HARNESS': 'bad'}, status=1)
+
+# Ctrl-D on an empty canonical input line must terminate either picker.
+choose(b'\x04', None, b'Choose a profile', status=1)
+choose(None, b'\x04', b'Choose a coding agent', command='ai-juspay', status=1)
