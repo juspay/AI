@@ -49,9 +49,9 @@ upstream omp. It:
    to whatever `extensions:` your settings already list, so these and your own
    extensions compose.
 4. **Fills missing model roles on every launch.** In `~/.omp/agent/config.yml`,
-   absent `default` / `smol` roles get `litellm/open-fast`, and absent `task` /
-   `slow` roles get `litellm/open-large`. This also repairs older configs so
-   workers and reviewers have explicit defaults independent of the primary.
+   absent `default` / `task` / `slow` roles get `litellm/open-large`, and an
+   absent `smol` role gets `litellm/open-fast`. This also repairs older configs
+   so workers and reviewers have explicit defaults independent of the primary.
 
 That config file is **yours** — the ordinary settings file `/model` and
 `/settings` write to. Existing role assignments, unrelated settings, and YAML

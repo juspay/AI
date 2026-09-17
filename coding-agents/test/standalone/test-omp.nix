@@ -153,7 +153,7 @@ in
     # writes land somewhere that survives the next launch.
     machine.succeed(f"test -f {CONFIG}")
     config = machine.succeed(f"cat {CONFIG}")
-    for role, model in {"default": "open-fast", "smol": "open-fast", "task": "open-large", "slow": "open-large"}.items():
+    for role, model in {"default": "open-large", "smol": "open-fast", "task": "open-large", "slow": "open-large"}.items():
         assert f"{role}: litellm/{model}" in config, config
     machine.fail("test -e /home/testuser/.omp/agent/models.yml")
     print("✅ fresh config has explicit primary, worker and reviewer roles")
@@ -194,7 +194,7 @@ in
         run_as_user("PI_CODING_AGENT_DIR=/home/testuser/relocated omp --version")
         repaired = machine.succeed(f"cat {relocated}")
         assert initial in repaired
-        assert "default: litellm/open-fast" in repaired
+        assert "default: litellm/open-large" in repaired
         assert "slow: litellm/open-large" in repaired
 
     for invalid in ["modelRoles: [", "modelRoles: []\n", "modelRoles: null\n"]:
