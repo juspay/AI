@@ -2,22 +2,21 @@
 # in the repo. The omp wrapper names this directory as an extension root, `omp
 # -e <dir>` (see coding-agents/omp/default.nix).
 #
-# Two sources, and only two: juspay/skills' whole `skills/` tree, plus the one
-# `frontend-design` skill out of anthropics/skills. Anything that already ships
-# as a standard Agent Plugins package does *not* belong here — kolu used to be
-# copied in and is now passed to omp as its own `-e` root, which is what the
-# wrapper's second extension is.
+# The one source: juspay/skills' whole `skills/` tree. Anything that already
+# ships as a standard Agent Plugins package does *not* belong here — kolu used
+# to be copied in and is now passed to omp as its own `-e` root, which is what
+# the wrapper's second extension is.
 #
 # The whole contract is the layout: OMP scans `<root>/skills/<name>/SKILL.md`,
 # exactly one level deep and non-recursively. `skills` is hardcoded in OMP, not
 # read from anywhere, so that directory name is the one thing here that must not
 # change. juspay/skills already ships that layout at its root, so its skills are
-# copied wholesale; anthropics/skills contributes one skill directory.
+# copied wholesale.
 #
 # The root manifest routes discovery through omp's Agent Plugins provider.
 # Keep the standard skills layout so other compatible clients can load the
 # same bundle. The VM test verifies every bundled skill through a real session.
-{ runCommand, juspay-skills, anthropics-skills }:
+{ runCommand, juspay-skills }:
 
 runCommand "omp-juspay-skills-plugin" { } ''
   mkdir -p "$out/skills"
@@ -28,7 +27,6 @@ runCommand "omp-juspay-skills-plugin" { } ''
   }
   EOF
   cp -r ${juspay-skills}/skills/. "$out/skills/"
-  cp -r ${anthropics-skills}/skills/frontend-design "$out/skills/"
   chmod -R u+w "$out/skills"
 
   # A skill OMP cannot see is a silent no-op, so fail the build instead: every

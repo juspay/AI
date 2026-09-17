@@ -17,11 +17,11 @@ let
     # through an unattended nightly lock bump, so nothing else would catch it.
     # Add a name here only if you mean to promise it.
     #
-    # `kolu` is the odd one: the first two are copied into this repo's bundle,
-    # while kolu ships its own Agent Plugins package that omp loads whole. Its
+    # `kolu` is the odd one: the first is copied into this repo's bundle, while
+    # kolu ships its own Agent Plugins package that omp loads whole. Its
     # presence here checks discovery of that separate root; test-omp.nix also
     # verifies all skills in our composed Agent Plugins bundle.
-    PROMISED_SKILLS = ["nix-haskell", "frontend-design", "kolu"]
+    PROMISED_SKILLS = ["nix-haskell", "kolu"]
   '';
 in
 {

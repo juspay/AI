@@ -27,18 +27,17 @@
     # vendored into this repo. juspay/skills ships an Agent Plugins manifest,
     # but we copy only its skills into our composed bundle.
     juspay-skills = { url = "github:juspay/skills"; flake = false; };
-    anthropics-skills = { url = "github:anthropics/skills"; flake = false; };
 
     # kolu, for its `agent-plugin/` directory: a standard Agent Plugins 1.0.0
     # package (plugin.json + mcp.json + skills/kolu/SKILL.md) that omp loads
-    # whole, rather than a skill we copy into our own bundle. It is a plain tree
-    # like the other two — nothing here builds kolu — and unlike the skill it
-    # replaces, this path is *not* export-ignored, so an ordinary flake input
-    # can see it and `nix flake update` can bump it.
+    # whole, rather than a skill we copy into our own bundle. It is a plain
+    # tree like juspay-skills — nothing here builds kolu — and unlike the skill
+    # it replaces, this path is *not* export-ignored, so an ordinary flake
+    # input can see it and `nix flake update` can bump it.
     kolu = { url = "github:juspay/kolu"; flake = false; };
   };
 
-  outputs = { self, nixpkgs, oh-my-pi, juspay-skills, anthropics-skills, kolu }:
+  outputs = { self, nixpkgs, oh-my-pi, juspay-skills, kolu }:
     let
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
@@ -51,7 +50,7 @@
           # The skills, built in the store as an OMP plugin package. OMP takes
           # the package itself, via `extensions:`.
           skillsPlugin = pkgs.callPackage ./coding-agents/omp/plugin.nix {
-            inherit juspay-skills anthropics-skills;
+            inherit juspay-skills;
           };
           omp = pkgs.callPackage ./coding-agents/omp {
             inherit skillsPlugin;
