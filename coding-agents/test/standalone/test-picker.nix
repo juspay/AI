@@ -13,7 +13,7 @@ in
 
     status, output = machine.execute("su - testuser -c 'ai --version </dev/null 2>&1'")
     assert status != 0
-    assert "#omp" in output and "#codex" in output, output
+    assert "#omp" in output and "#codex" in output and "#claude" in output, output
 
     # A real PTY exercises selection and argument forwarding.
     machine.succeed("su - testuser -c 'python ${./check-picker.py}'")

@@ -1,7 +1,8 @@
 # Skills and plugins
 
-Both agents load the same two portable sources. Codex installs them through its
-native marketplace commands; OMP loads them directly as extension roots.
+All three agents load the same two portable sources. Codex uses native
+marketplace installation, OMP uses extension roots, and Claude Code uses
+session-local plugin directories adapted to its format.
 
 Neither [juspay/skills](https://github.com/juspay/skills) nor
 [juspay/kolu](https://github.com/juspay/kolu) is vendored into this repository.
@@ -92,3 +93,34 @@ provider settings you supplied yourself.
 
 See the official [plugin packaging guide](https://developers.openai.com/plugins/build/plugins)
 for portable manifests and native marketplace installation.
+
+## Claude Code loading
+
+[`coding-agents/claude/default.nix`](../coding-agents/claude/default.nix) adapts
+the shared skill/MCP packages into Claude's layout at build time. It generates
+`.claude-plugin/plugin.json` from their metadata, copies `skills/` with its
+supporting files, and translates Kolu's MCP declaration into `.mcp.json`.
+The copies are self-contained because Claude checks that components stay within
+their plugin root.
+
+The launcher passes both directories with repeated `--plugin-dir` flags. Claude
+loads them for that session, alongside any extra plugin directories you pass.
+There is no marketplace registration, install step, or wrapper-written user
+configuration. A new flake build supplies the new plugin contents directly.
+
+```bash
+nix run github:juspay/AI#claude
+nix run github:juspay/AI#claude -- plugin list --json
+nix run github:juspay/AI#claude -- plugin details kolu
+```
+
+Claude reports these plugins as `juspay-skills@inline` and `kolu@inline`. Kolu's
+server still runs `kolu mcp`, using `kolu` from your `PATH`.
+
+Use normal Claude authentication, model choices, and settings. The launcher
+preserves `~/.claude/settings.json` and honors `CLAUDE_CONFIG_DIR`. It adds no
+Juspay initialization; `JUSPAY` has no effect. Your own environment, project
+configuration, and CLI arguments continue to be handled by Claude itself.
+
+See Claude's [plugin reference](https://code.claude.com/docs/en/plugins-reference)
+for plugin directories, manifests, and MCP configuration.

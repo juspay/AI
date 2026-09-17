@@ -20,7 +20,7 @@ def choose(selection, expected):
         if not chunk:
             break
         output += chunk
-        if not sent and b'Agent [1/2]' in output:
+        if not sent and b'Agent [1/2/3]' in output:
             os.write(fd, selection)
             sent = True
     else:
@@ -32,5 +32,6 @@ def choose(selection, expected):
     assert expected in output, output
 
 choose(b'2\n', b'codex-cli')
+choose(b'3\n', b'(Claude Code)')
 choose(b'wrong\n1\n', b'Enter 1 for Oh My Pi')
 choose(b'q\n', b'Choose a coding agent')

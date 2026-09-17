@@ -24,7 +24,11 @@ def main():
         "Codex", env["CODEX_BEFORE"], env["CODEX_AFTER"],
         "https://github.com/openai/codex/releases/tag/rust-v",
     )
-    changes = omp_changes + codex_changes
+    claude_changes, claude_note = describe(
+        "Claude Code", env["CLAUDE_BEFORE"], env["CLAUDE_AFTER"],
+        "https://github.com/anthropics/claude-code/releases/tag/v",
+    )
+    changes = omp_changes + codex_changes + claude_changes
     title = "chore(flake): update inputs"
     if changes:
         title += " (" + "; ".join(changes) + ")"
@@ -33,8 +37,9 @@ def main():
     lock_log = (temporary / "flake-update.log").read_text().rstrip()
     body = temporary / "flake-update-body.md"
     body.write_text(
-        f"Automated flake input update.\n\n{omp_note}\n\n{codex_note}\n\n"
+        f"Automated flake input update.\n\n{omp_note}\n\n{codex_note}\n\n{claude_note}\n\n"
         "Codex packaging: https://github.com/sadjow/codex-cli-nix\n\n"
+        "Claude Code packaging: https://github.com/sadjow/claude-code-nix\n\n"
         f"```text\n{lock_log}\n```\n\n### CI on this PR\n\n"
         f"The [Update Flake]({run_url}) workflow builds and tests this branch, "
         "then squash-merges the PR only after verification succeeds.\n"

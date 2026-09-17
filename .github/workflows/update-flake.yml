@@ -20,11 +20,13 @@ jobs:
         with:
           github_access_token: ${{ github.token }}
 
-      - name: Read the pinned Codex version
-        id: codex-before
+      - name: Read the pinned package versions
+        id: versions-before
         run: |
           version=$(nix eval --raw .#codex.version)
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "codex-version=$version" >> "$GITHUB_OUTPUT"
+          version=$(nix eval --raw .#claude.version)
+          echo "claude-version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Advance the oh-my-pi release pin
         id: omp
@@ -39,6 +41,8 @@ jobs:
           nix flake update --log-format raw 2>&1 | tee "$RUNNER_TEMP/flake-update.log"
           version=$(nix eval --raw .#codex.version)
           echo "codex-version=$version" >> "$GITHUB_OUTPUT"
+          version=$(nix eval --raw .#claude.version)
+          echo "claude-version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Describe the locked versions
         id: report
@@ -46,8 +50,10 @@ jobs:
           OMP_BEFORE: ${{ steps.omp.outputs.before }}
           OMP_AFTER: ${{ steps.omp.outputs.after }}
           OMP_LATEST: ${{ steps.omp.outputs.latest }}
-          CODEX_BEFORE: ${{ steps.codex-before.outputs.version }}
+          CODEX_BEFORE: ${{ steps.versions-before.outputs.codex-version }}
           CODEX_AFTER: ${{ steps.lock.outputs.codex-version }}
+          CLAUDE_BEFORE: ${{ steps.versions-before.outputs.claude-version }}
+          CLAUDE_AFTER: ${{ steps.lock.outputs.claude-version }}
         run: python3 .github/scripts/describe-flake-update.py
 
       - uses: peter-evans/create-pull-request@v8
