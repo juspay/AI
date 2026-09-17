@@ -23,7 +23,7 @@ let
   # The models the agent starts on: role assignments, not a catalog. Each must
   # be an id the gateway actually serves — nothing here validates them, and OMP
   # falls back to its own first-available model if one goes missing.
-  defaultModel = "open-fast";
+  defaultModel = "open-large";
   largeModel = "open-large";
   smallModel = "open-fast";
 
