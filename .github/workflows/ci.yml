@@ -31,11 +31,16 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
 
-      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Test flake update policy and reporting
+        if: runner.os == 'Linux'
+        run: python3 .github/scripts/test-update-flake.py
+
+      - uses: cachix/install-nix-action@v31
         with:
+          github_access_token: ${{ github.token }}
           # Trust the project cache so builds pull from it (warms nix run /
           # nix develop on both platforms) instead of rebuilding.
-          extra-conf: |
+          extra_nix_config: |
             extra-substituters = https://cache.nixos.asia/oss
             extra-trusted-public-keys = oss:KO872wNJkCDgmGN3xy9dT89WAhvv13EiKncTtHDItVU=
 
@@ -52,9 +57,9 @@ jobs:
             --override-input flake .)
           attic push oss "$outs"
 
-      - name: nix build Oh My Pi
+      - name: Build picker and both agents
         run: |
-          nix build --print-build-logs .#default
+          nix build --print-build-logs .#default .#omp .#codex
 
       - name: Wrapper package tests
         # The wrapper tests boot NixOS VMs, so they only run where a Linux
