@@ -10,8 +10,8 @@
 # leaves `~/.omp/agent` where OMP puts it, so config, sessions, auth and
 # onboarding persist across runs and the config is the user's file to edit. What
 # the wrapper contributes is layered on top instead of replacing it: skills come
-# in on the command line (`-e`), and absent model roles are filled in
-# config.yml on each launch. Existing role assignments remain the user’s choices.
+# in on the command line (`-e`), and absent settings are filled in config.yml on
+# each launch. Whatever the user has set stays their choice.
 { lib, writeShellApplication, formats, gum, python3, omp, skillsPlugin, koluPlugin }:
 let
   # Juspay gateway policy. There is deliberately no model catalog: OMP ships
@@ -37,7 +37,7 @@ let
   # freeze a store path that changes on every lock bump. The plugin goes on the
   # command line instead (see `-e` below), which composes with whatever
   # `extensions:` the user ends up writing.
-  roleDefaults = (formats.yaml { }).generate "omp-config.yml" {
+  configDefaults = (formats.yaml { }).generate "omp-config.yml" {
     # Without this OMP starts on its own first-available model; the roles are how
     # our recommendation reaches the agent.
     modelRoles = {
@@ -46,6 +46,11 @@ let
       task = "litellm/${largeModel}";
       slow = "litellm/${largeModel}";
     };
+    # OMP ships this off, so a subagent's row names the agent and nothing else:
+    # which model a worker or reviewer actually resolved to is invisible. Our
+    # roles point at gateway aliases (`open-large`), and an agent can carry its
+    # own model override, so the badge is the only place that answer surfaces.
+    task.showResolvedModelBadge = true;
   };
 in
 writeShellApplication {
@@ -81,13 +86,14 @@ writeShellApplication {
           export LITELLM_API_KEY
         fi
 
-        # Fill absent roles in the persistent config, including installations
-        # created before this wrapper. Existing keys always win, so /model
-        # choices survive relaunch. Invalid YAML stops launch without a write.
-        # Honour OMP's relocated agent directory and its default otherwise.
+        # Fill absent defaults in the persistent config, including
+        # installations created before this wrapper. Existing keys always win,
+        # so /model and /settings choices survive relaunch. Invalid YAML stops
+        # launch without a write. Honour OMP's relocated agent directory and
+        # its default otherwise.
         agent_dir="''${PI_CODING_AGENT_DIR:-''${HOME:-}/.omp/agent}"
         if [ -n "''${PI_CODING_AGENT_DIR:-}''${HOME:-}" ]; then
-          ${configPython}/bin/python ${./fill-model-roles.py} "$agent_dir/config.yml" ${roleDefaults}
+          ${configPython}/bin/python ${./fill-config-defaults.py} "$agent_dir/config.yml" ${configDefaults}
         fi
 
         # These two are how OMP finds the gateway and asks it what it serves, so the

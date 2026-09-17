@@ -1,4 +1,4 @@
-"""Add absent wrapper defaults without replacing the user's model choices."""
+"""Add absent wrapper defaults without replacing the user's own settings."""
 
 import os
 from pathlib import Path
@@ -11,7 +11,31 @@ from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap
 
 
-def fill_roles(config, defaults):
+def fill_absent(target, defaults, path=""):
+    """Add every default the user has not set, recursing into shared mappings.
+
+    A key the user set is never replaced, mappings included: the recursion only
+    reaches below it, and only for keys the user left out. So a config that
+    already names every role and every display setting is not rewritten at all,
+    while one that never mentioned them gets them back on the next launch.
+    """
+    added = 0
+    for key, value in defaults.items():
+        where = f"{path}{key}"
+        if key not in target:
+            target[key] = value
+            added += 1
+        elif isinstance(value, MutableMapping):
+            # A section the user set to something else is a config error, not a
+            # default to skip: OMP would read past it and silently run without
+            # the settings under it — the roles among them.
+            if not isinstance(target[key], MutableMapping):
+                raise ValueError(f"{where} must be a YAML mapping")
+            added += fill_absent(target[key], value, f"{where}.")
+    return added
+
+
+def fill_defaults(config, defaults):
     # Follow a user's config symlink rather than replacing it.
     config = config.resolve()
     yaml = YAML()
@@ -29,15 +53,8 @@ def fill_roles(config, defaults):
                 preamble += "\n"
     if not isinstance(data, MutableMapping):
         raise ValueError("config must be a YAML mapping")
-    if "modelRoles" not in data:
-        data["modelRoles"] = {}
-    roles = data["modelRoles"]
-    if not isinstance(roles, MutableMapping):
-        raise ValueError("modelRoles must be a YAML mapping")
-    missing = {key: value for key, value in defaults.items() if key not in roles}
-    if not missing:
+    if not fill_absent(data, defaults):
         return
-    roles.update(missing)
     config.parent.mkdir(parents=True, exist_ok=True)
     mode = stat.S_IMODE(config.stat().st_mode) if exists else 0o600
     fd, temporary = tempfile.mkstemp(prefix=".config-", dir=config.parent)
@@ -55,7 +72,7 @@ def fill_roles(config, defaults):
 
 if __name__ == "__main__":
     try:
-        defaults = YAML(typ="safe").load(Path(sys.argv[2]))["modelRoles"]
-        fill_roles(Path(sys.argv[1]), defaults)
+        defaults = YAML(typ="safe").load(Path(sys.argv[2]))
+        fill_defaults(Path(sys.argv[1]), defaults)
     except Exception as error:
-        sys.exit(f"omp: cannot fill model roles in {sys.argv[1]}: {error}")
+        sys.exit(f"omp: cannot fill config defaults in {sys.argv[1]}: {error}")

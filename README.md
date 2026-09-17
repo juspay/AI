@@ -48,19 +48,24 @@ upstream omp. It:
    agent plugin (`-e /nix/store/…/agent-plugin`). CLI extension roots are added
    to whatever `extensions:` your settings already list, so these and your own
    extensions compose.
-4. **Fills missing model roles on every launch.** In `~/.omp/agent/config.yml`,
-   absent `default` / `task` / `slow` roles get `litellm/open-large`, and an
-   absent `smol` role gets `litellm/open-fast`. This also repairs older configs
-   so workers and reviewers have explicit defaults independent of the primary.
+4. **Fills missing model roles and settings on every launch.** In
+   `~/.omp/agent/config.yml`, absent `default` / `task` / `slow` roles get
+   `litellm/open-large`, and an absent `smol` role gets `litellm/open-fast`. This
+   also repairs older configs so workers and reviewers have explicit defaults
+   independent of the primary. `task.showResolvedModelBadge` is switched on the
+   same way, so task rows name the model each subagent actually resolved to
+   instead of hiding it.
 
 That config file is **yours** — the ordinary settings file `/model` and
 `/settings` write to. Existing role assignments, unrelated settings, and YAML
-comments are preserved. When all roles are present, the file is not rewritten.
-Sessions, auth and onboarding state persist across runs. Removing a role makes
-it receive the wrapper default on the next launch; edit its value to choose a
-custom model. Invalid YAML is reported without modifying the file.
+comments are preserved. When everything the wrapper defaults is already present,
+the file is not rewritten. Sessions, auth and onboarding state persist across
+runs. Removing a role makes it receive the wrapper default on the next launch;
+edit its value to choose a custom model, and turn the badge back off in
+`/settings` if you would rather not see it. Invalid YAML is reported without
+modifying the file.
 
-(If you export `PI_CODING_AGENT_DIR`, the wrapper fills roles there instead.)
+(If you export `PI_CODING_AGENT_DIR`, the wrapper fills defaults there instead.)
 
 If you run omp yourself rather than through the wrapper, those same two
 variables are all it needs:
