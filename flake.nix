@@ -24,8 +24,8 @@
 
     # Skill sources. Not flakes — each is a plain tree we read `skills/` out of
     # when building the OMP plugin (coding-agents/omp/plugin.nix). Nothing is
-    # vendored into this repo. juspay/skills is itself an OMP marketplace and
-    # plugin (its package.json carries the manifest), so its tree is used as-is.
+    # vendored into this repo. juspay/skills ships an Agent Plugins manifest,
+    # but we copy only its skills into our composed bundle.
     juspay-skills = { url = "github:juspay/skills"; flake = false; };
     anthropics-skills = { url = "github:anthropics/skills"; flake = false; };
 

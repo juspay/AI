@@ -115,7 +115,7 @@ in
     # omp says nothing about it.
     #
     # There are exactly two, in a fixed order, and they are different kinds of
-    # thing: our own composed bundle, then kolu's Agent Plugins package taken
+    # thing: our composed Agent Plugins bundle, then kolu's package taken
     # verbatim out of juspay/kolu.
     # Anchored on /nix/store so the `[ ! -e "$agent_dir/…" ]` test above — the
     # other `-e` in this script, and a different `-e` entirely — cannot match.
@@ -126,6 +126,12 @@ in
     if not bundle.endswith("-omp-juspay-skills-plugin"):
         raise Exception(f"first -e root is not this repo's skills bundle: {bundle}")
     machine.succeed(f"test -d {bundle}/skills")
+    manifest = json.loads(machine.succeed(f"cat {bundle}/plugin.json"))
+    assert manifest == {
+        "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+        "name": "omp-juspay-skills",
+    }, manifest
+    bundled_skills = set(machine.succeed(f"ls -1 {bundle}/skills").split())
     print(f"✅ wrapper loads this repo's skills with -e {bundle}")
 
     # kolu is no longer harvested into our bundle — if it reappears there, the
@@ -203,6 +209,11 @@ in
     # negative control (dropping `-e` loads none of these skills) — and only
     # this one also catches omp changing what `-e` roots mean for skills.
     skills = loaded_skills()
+    # Standard discovery validates frontmatter more strictly than the legacy
+    # provider. Check every bundled skill, so a rejected skill cannot hide
+    # behind the representative names in PROMISED_SKILLS.
+    expected_skills = bundled_skills | {"kolu"}
+    assert skills == expected_skills, f"expected {sorted(expected_skills)}, loaded {sorted(skills)}"
     missing = [s for s in PROMISED_SKILLS if s not in skills]
     if missing:
         raise Exception(f"omp did not load {missing} via -e (loaded {sorted(skills)})")
