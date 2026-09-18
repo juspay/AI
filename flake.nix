@@ -11,7 +11,7 @@
     # a branch. The tag is the whole point: `update-flake.yml` resolves the
     # latest release daily and rewrites this ref, and the lock makes the pin
     # reproducible in between.
-    oh-my-pi.url = "github:can1357/oh-my-pi/v18.2.4";
+    oh-my-pi.url = "github:can1357/oh-my-pi/v18.2.5";
 
     # Each packaging repo tracks its current release binary and keeps its own
     # nixpkgs so packaging updates do not depend on OMP's build dependencies.
