@@ -2,8 +2,8 @@
   description = "Juspay distribution integration tests";
 
   inputs = {
-    # just test overrides this with the local distribution under test.
-    ai.url = "github:juspay/AI";
+    # Use the distribution in this checkout without a published revision.
+    ai.url = "path:..";
     nixpkgs.follows = "ai/agent-distro/nixpkgs";
   };
 

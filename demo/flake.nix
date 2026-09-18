@@ -2,7 +2,7 @@
   description = "Demo screencast generator";
 
   inputs = {
-    ai.url = "github:juspay/AI";
+    ai.url = "path:..";
     nixpkgs.follows = "ai/agent-distro/nixpkgs";
 
     # Pinned for vhs 0.11.0: vhs 0.12.0 (what ai/agent-distro/nixpkgs carries) runs the whole

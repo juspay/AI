@@ -119,8 +119,8 @@ is planned in agent-distro.
 library against this distribution's packages and profile. Coverage includes
 all three harnesses, gateway defaults and opt-out, the deprecation line,
 the picker's own-login label, isolated Kolu MCP fixtures, and second-build
-plugin re-registration/re-path tests from #181. `just test` overrides the
-committed test lock's AI input with the checkout. Vanilla and generic framework
+plugin re-registration/re-path tests from #181. `just test` uses the
+test flake's relative `path:..` input to select the parent checkout. Vanilla and generic framework
 coverage belong to agent-distro.
 
 ## Relation to agent-skills-nix

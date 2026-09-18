@@ -36,6 +36,7 @@ jobs:
         run: |
           nix flake update --log-format raw 2>&1 | tee "$RUNNER_TEMP/flake-update.log"
           nix flake update --flake ./test --log-format raw 2>&1 | tee -a "$RUNNER_TEMP/flake-update.log"
+          nix flake update --flake ./demo --log-format raw 2>&1 | tee -a "$RUNNER_TEMP/flake-update.log"
           version=$(jq -er '.nodes as $nodes | $nodes[$nodes.root.inputs["agent-distro"]].inputs["oh-my-pi"] as $omp | $nodes[$omp].original.ref' flake.lock)
           echo "omp-version=$version" >> "$GITHUB_OUTPUT"
           version=$(nix eval --raw .#codex.version)
@@ -62,6 +63,7 @@ jobs:
           add-paths: |
             flake.lock
             test/flake.lock
+            demo/flake.lock
           title: ${{ steps.report.outputs.pr-title }}
           body-path: ${{ steps.report.outputs.pr-body-path }}
           commit-message: "chore(flake): update inputs"

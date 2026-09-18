@@ -33,18 +33,14 @@
         "kolu": "kolu"
       },
       "locked": {
-        "lastModified": 1789693002,
-        "narHash": "sha256-DwluCSD074E2r6cBDAanz3WbseQfMAYu5/69hBkK/5A=",
-        "owner": "juspay",
-        "repo": "AI",
-        "rev": "bffd216ba13fecff45e29c888db868b558124f22",
-        "type": "github"
+        "path": "..",
+        "type": "path"
       },
       "original": {
-        "owner": "juspay",
-        "repo": "AI",
-        "type": "github"
-      }
+        "path": "..",
+        "type": "path"
+      },
+      "parent": []
     },
     "bun2nix": {
       "inputs": {

@@ -12,7 +12,7 @@ just demo    # OMP screencast; requires LITELLM_API_KEY
 ```
 
 `test/flake.nix` is a separate flake with a committed lock. `just test` runs
-`nix flake check -L ./test --override-input ai .`, testing this checkout's
+`nix flake check -L ./test`, testing this checkout's
 packages and `profiles.juspay` with agent-distro's reusable test library.
 Its nixpkgs follows `ai/agent-distro/nixpkgs` so the VMs use the harness package set.
 All twelve applicable checks are selected: harness discovery, the PTY picker
@@ -25,25 +25,28 @@ responses with a bounded timeout instead of fixed sleeps, preserving all
 skill-set and second-build assertions. Applying it during evaluation requires
 Nix's default import-from-derivation support.
 
-Update the root lock first, then the test lock:
+Update the root lock first, then the test and demo locks:
 
 ```bash
 nix flake update
 nix flake update --flake ./test
+nix flake update --flake ./demo
 just test
 ```
 
-The test lock pins a published AI revision for standalone use; the override
-in `just test` always selects the checkout, including its current dependency pins.
+Both test and demo flakes use the native relative input `ai.url = "path:.."`.
+Their locks refer to the parent checkout without a branch revision or source
+hash. `just test` and `just demo` need no input override; refreshing their locks
+after the root lock keeps their transitive dependency pins in sync.
 
 ## Daily updates
 
 The daily workflow updates `agent-distro`, `juspay-skills`, and `kolu`, then
-updates the test lock. OMP release-tag advancement happens in agent-distro;
+updates the test and demo locks. OMP release-tag advancement happens in agent-distro;
 this repo follows its harness pins. The report reads OMP's `original.ref`
 from agent-distro's transitive lock node, and evaluates `codex.version` and
 `claude.version` from the distribution packages. It reports changed and
-unchanged versions and includes both lock-update logs.
+unchanged versions and includes all three lock-update logs.
 
 CI builds all four packages on Linux and macOS, retains the devour-flake cache
 build, and runs `just test` on Linux. The update workflow invokes that same CI
