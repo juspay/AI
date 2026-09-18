@@ -1,5 +1,5 @@
 # Oh My Pi demo
-# Records a screencast of `nix run .#juspay.omp` → a hello-world prompt answered by the
+# Records a screencast of `nix run .#omp` → a hello-world prompt answered by the
 # Juspay gateway's default model.
 #
 # Usage (from the repo root):
@@ -48,10 +48,10 @@ Enter
 Sleep 1s
 Show
 
-# Type the run command. `nix run .#juspay.omp` rather than `nix run github:juspay/AI#juspay.omp` so the
+# Type the run command. `nix run .#omp` rather than `nix run github:juspay/AI#omp` so the
 # recording shows *this* checkout — the published flake would be one release
 # behind whatever is being demoed.
-Type "nix run .#juspay.omp"
+Type "nix run .#omp"
 Sleep 500ms
 Enter
 

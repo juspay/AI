@@ -1,49 +1,42 @@
 # AI
 
-Run **[Oh My Pi](https://github.com/can1357/oh-my-pi)**,
-**[Codex](https://github.com/openai/codex)**, or
-**[Claude Code](https://code.claude.com/docs)** with a choice of profiles.
+The Juspay distribution of **[Oh My Pi](https://github.com/can1357/oh-my-pi)**,
+**[Codex](https://github.com/openai/codex)**, and
+**[Claude Code](https://code.claude.com/docs)**, with Juspay skills and Kolu.
+Built with [agent-distro](https://github.com/juspay/agent-distro); see its
+[README](https://github.com/juspay/agent-distro#readme) to build your own distribution.
 
 ## Quick start
 
-[Install Nix](https://nixos.asia/en/install), then pick a profile and harness:
+[Install Nix](https://nixos.asia/en/install), then pick a harness or launch directly:
 
 ```bash
-nix run github:juspay/AI
-nix run github:juspay/AI#juspay       # pick a harness in this profile
-nix run github:juspay/AI#juspay.omp   # launch directly
+nix run github:juspay/AI          # harness picker
+nix run github:juspay/AI#omp
+nix run github:juspay/AI#codex
+nix run github:juspay/AI#claude
 ```
 
-| Profile | Plugins | OMP gateway |
-|---|---|---|
-| `vanilla` | None | Your own provider |
-| `kolu` | Kolu skill and MCP server | Your own provider |
-| `juspay` | Juspay skills and Kolu | Juspay LiteLLM |
-
-Every profile supports `omp`, `codex`, and `claude`: for example,
-`nix run github:juspay/AI#vanilla.claude`.
-
-- **OMP with the Juspay profile** prompts for `LITELLM_API_KEY` unless exported.
-  Create a key at [grid.ai.juspay.net/dashboard](https://grid.ai.juspay.net/dashboard).
-  Use `AI_GATEWAY=0 nix run github:juspay/AI#juspay.omp` for your own provider
-  while keeping the plugins.
-- **Codex** uses its own login: `nix run github:juspay/AI#juspay.codex -- login`.
-  It installs the profile's plugins while preserving unrelated settings and login.
-- **Claude Code** uses its own login and loads the profile's plugins for the session.
+- **OMP** prompts for `LITELLM_API_KEY` unless exported. Create a key at
+  [grid.ai.juspay.net/dashboard](https://grid.ai.juspay.net/dashboard).
+  Use `AI_GATEWAY=0 nix run github:juspay/AI#omp` for your own provider while
+  keeping the plugins.
+- **Codex** uses its own login: `nix run github:juspay/AI#codex -- login`.
+  It installs the plugins while preserving unrelated settings and login.
+- **Claude Code** uses its own login and loads the plugins for the session.
 
 Pass harness arguments after `--`. For scripts, use a direct launcher or
-`AI_PROFILE=vanilla AI_HARNESS=omp nix run github:juspay/AI -- --version`.
-Without those environment variables, the pickers require a terminal.
+`AI_HARNESS=omp AI_GATEWAY=0 nix run github:juspay/AI -- --version`.
+Without `AI_HARNESS`, the picker requires a terminal.
 Kolu's MCP server needs `kolu` on `PATH`.
 Supported systems: x86_64 Linux, aarch64 Linux, and Apple Silicon macOS.
 
-The old `#omp`, `#codex`, and `#claude` outputs have been removed; use
-`#juspay.omp`, `#juspay.codex`, and `#juspay.claude`. `JUSPAY=0` is deprecated
-and still works for one release; replace it with `AI_GATEWAY=0`.
+Migration: `#juspay.omp` → `#omp`, `#juspay.codex` → `#codex`, `#juspay.claude` → `#claude`.
+`#vanilla`, `#kolu`, and `AI_PROFILE` are removed; plain harnesses are `nix run github:juspay/agent-distro`.
 
-Codex and Claude Code use [sadjow/codex-cli-nix](https://github.com/sadjow/codex-cli-nix)
-and [sadjow/claude-code-nix](https://github.com/sadjow/claude-code-nix).
-All agents and plugin sources receive daily, CI-verified updates.
+`JUSPAY=0` still works for one release with a deprecation message; use `AI_GATEWAY=0`.
+Harness pins follow agent-distro. This distribution receives daily, CI-verified
+updates to the framework and plugin sources.
 
 ## Documentation
 

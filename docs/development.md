@@ -1,88 +1,73 @@
-# Development and updates
+# Development
 
 ## Checks
 
 ```bash
-nix build .#default .#vanilla .#kolu .#juspay
-nix build .#juspay.omp .#juspay.codex .#juspay.claude .#vanilla.omp
+nix build .#default .#omp .#codex .#claude
 nix flake check
+AI_HARNESS=omp AI_GATEWAY=0 nix run . -- --version
 python3 .github/scripts/test-update-flake.py
 just test    # NixOS VM tests; Linux with KVM
 just demo    # OMP screencast; requires LITELLM_API_KEY
 ```
 
-The tests exercise real agent discovery without model calls. OMP tests cover
-gateway defaults and opt-out; Codex and Claude tests cover their plugin discovery
-and user state. Claude connects to an isolated Kolu MCP fixture, and the picker
-is exercised through a PTY.
+`test/flake.nix` is a separate flake with a committed lock. `just test` runs
+`nix flake check -L ./test --override-input ai .`, testing this checkout's
+packages and `profiles.juspay` with agent-distro's reusable test library.
+Its nixpkgs follows `ai/agent-distro/nixpkgs` so the VMs use the harness package set.
+All twelve applicable checks are selected: harness discovery, the PTY picker
+and its own-login labels, gateway defaults and environment, `AI_GATEWAY=0`,
+the `JUSPAY=0` deprecation, Kolu MCP fixtures, and same-home second-build
+plugin tests for Codex marketplace re-registration and Claude/OMP path changes.
+Tests use real harnesses without model calls.
+
+Update the root lock first, then the test lock:
+
+```bash
+nix flake update
+nix flake update --flake ./test
+just test
+```
+
+The test lock pins a published AI revision for standalone use; the override
+in `just test` always selects the checkout, including its current dependency pins.
+During this migration, agent-distro is pinned to its PR 1 `init` branch. Switch
+the URL to its default branch and re-lock after that PR merges.
 
 ## Daily updates
 
-CI installs upstream Nix with `cachix/install-nix-action`. The update job runs
-`nix flake update` directly and uses `peter-evans/create-pull-request` to publish
-the resulting pins and version report. OMP release selection emits only version
-facts; PR formatting consumes those facts after all inputs are locked. Release
-policy and report wording live in separate scripts under `.github/scripts/`.
+The daily workflow updates `agent-distro`, `juspay-skills`, and `kolu`, then
+updates the test lock. OMP release-tag advancement happens in agent-distro;
+this repo follows its harness pins. The report reads OMP's `original.ref`
+from agent-distro's transitive lock node, and evaluates `codex.version` and
+`claude.version` from the distribution packages. It reports changed and
+unchanged versions and includes both lock-update logs.
 
-This flake's `flake.lock` is **auto-updated daily** via CI, so you always get the
-latest packaged Codex and Claude Code, omp release, skills and kolu plugin. The
-job runs a plain `nix flake update`, so every input rides along with no per-input
-wiring — except omp, which
-is pinned to an upstream **release tag** rather than a branch, so the job
-resolves the latest release first and rewrites that ref (`nix flake update`
-alone can never move a tag-pinned input) and it only ever moves the pin
-*forward*, since a release trails the tag it belongs to. If pinning
-via `flake.lock` in your own flake, run `nix flake update AI` to pull the latest.
-Codex and Claude Code track their packaging repositories' default branches, so
-the ordinary lock update picks up their release binaries. Update PRs report all
-three agents' versions, including when a version is unchanged. The shared CI builds the picker and all
-agents on Linux and macOS, runs their VM tests on Linux, and gates the
-automatic merge on success.
-Nothing about the gateway's models is snapshotted here.
+CI builds all four packages on Linux and macOS, retains the devour-flake cache
+build, and runs `just test` on Linux. The update workflow invokes that same CI
+and merges its update PR only after verification succeeds.
+Gateway models are discovered at runtime, not snapshotted here.
 
 ## Architecture
 
 ```
-├── flake.nix                 # Pins, resolved profiles, public outputs
-├── profiles/                 # vanilla.nix, kolu.nix, juspay.nix: plain data
-├── lib/mk-launchers.nix      # Profile + package set → all harness launchers
-├── coding-agents/
-│   ├── profile-picker.nix   # Profile selection (AI_PROFILE)
-│   ├── picker.nix           # Harness selection (AI_HARNESS)
-│   ├── codex/               # Profile marketplace installation, own login
-│   ├── claude/              # Plugin adaptation and session loading, own login
-│   ├── omp/
-│   │   ├── default.nix      # Plugins and optional LiteLLM gateway
-│   │   └── fill-config-defaults.py # Preserve YAML while filling absent keys
-│   └── test/standalone/     # NixOS VM integration tests
-├── demo/                    # Demo screencast infrastructure
-└── docs/                    # Usage, development, and design documentation
+├── flake.nix    # Framework/plugin pins and public outputs
+├── profile.nix  # Juspay plugin sources, branding, and LiteLLM gateway
+├── test/        # Selection of agent-distro VM tests and a separate lock
+├── docs/        # Juspay usage, development, and design documentation
+├── demo/        # Screencast infrastructure
+└── .github/     # CI, daily updates, and version reporting
 ```
 
-The skill sources are fetched into the store, then loaded by each adapter
-— see [Skills and plugins](plugins.md). Sources are not vendored.
+## Boundaries
 
-### Boundaries for another agent
+Adapters and pickers live in [agent-distro](https://github.com/juspay/agent-distro).
+This repo owns `profile.nix`, Juspay documentation, and gateway/Kolu test
+selection. Framework behavior and new harness support belong upstream.
+Plugin sources remain separate repositories; they are not vendored here.
 
-Profiles are harness-independent data: `name`, `description`, `plugins`, and
-an optional `gateway`. Each adapter owns its plugin-loading protocol. Only OMP
-uses the gateway, including credential acquisition and YAML defaults.
-
-To add a harness, put its adapter under `coding-agents/<harness>/`, bind its
-upstream package in `lib/mk-launchers.nix`, and add it to the harness picker.
-Every profile then gets the harness. Keep profile-specific names and sources
-out of adapters, and test plugin discovery and preservation of user state.
-
-`packages.<system>.default` selects a profile and then a harness;
-`packages.<system>.<profile>` selects a harness.
-`legacyPackages.<system>.<profile>.<harness>` launches directly. Flat package
-outputs keep `nix flake check` valid. Profile pickers reference every launcher,
-so CI's existing devour-flake build includes their closures.
-
-Consumers can use `profiles.<name>` and
-`lib.mkLaunchers { pkgs; profile; }`, which returns `omp`, `codex`, `claude`,
-and `picker`. For example, override `gateway = null` in the resolved Juspay
-profile to retain its plugins without gateway initialization.
-
-See the [profiles design](design/profiles.md) for the implemented refactor and
-future phases.
+`agent-distro.lib.mkFlake` turns the profile into
+`packages.<system>.{default,omp,codex,claude}` and matching apps. The default
+package is the harness picker, binary `ai`. `profiles.juspay` exposes resolved
+profile data for consumers, including `gateway = null` overrides via
+agent-distro's library. See the [profile design](design/profiles.md).

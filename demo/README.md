@@ -1,6 +1,6 @@
 # Demo Screencast
 
-Records a GIF of `nix run .` → a hello-world prompt answered by the Juspay gateway, using [VHS](https://github.com/charmbracelet/vhs).
+Records a GIF of `nix run .#omp` → a hello-world prompt answered by the Juspay gateway, using [VHS](https://github.com/charmbracelet/vhs).
 
 ## Usage
 
