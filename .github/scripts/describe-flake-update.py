@@ -18,8 +18,6 @@ def main():
         "oh-my-pi", env["OMP_BEFORE"], env["OMP_AFTER"],
         "https://github.com/can1357/oh-my-pi/releases/tag/",
     )
-    if env["OMP_AFTER"] != env["OMP_LATEST"]:
-        omp_note += f" — latest release is `{env['OMP_LATEST']}`; the pin only moves forward."
     codex_changes, codex_note = describe(
         "Codex", env["CODEX_BEFORE"], env["CODEX_AFTER"],
         "https://github.com/openai/codex/releases/tag/rust-v",
@@ -37,6 +35,8 @@ def main():
     lock_log = (temporary / "flake-update.log").read_text().rstrip()
     body = temporary / "flake-update-body.md"
     body.write_text(
+        "Harness pins follow [agent-distro](https://github.com/juspay/agent-distro); "
+        "OMP release selection happens there.\n\n"
         f"Automated flake input update.\n\n{omp_note}\n\n{codex_note}\n\n{claude_note}\n\n"
         "Codex packaging: https://github.com/sadjow/codex-cli-nix\n\n"
         "Claude Code packaging: https://github.com/sadjow/claude-code-nix\n\n"

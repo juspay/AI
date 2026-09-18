@@ -3,7 +3,7 @@
 ## Juspay gateway
 
 ```bash
-nix run github:juspay/AI#juspay.omp
+nix run github:juspay/AI#omp
 ```
 
 Create a gateway key at [grid.ai.juspay.net/dashboard](https://grid.ai.juspay.net/dashboard)
@@ -12,11 +12,11 @@ not. Export `LITELLM_API_KEY` to skip the launcher's key prompt on subsequent ru
 
 ## Your own provider
 
-Use `nix run github:juspay/AI#vanilla.omp` for OMP without plugins or a gateway.
+Use `nix run github:juspay/agent-distro#omp` for OMP without plugins or a gateway.
 To keep the Juspay profile’s plugins while disabling its gateway:
 
 ```bash
-AI_GATEWAY=0 nix run github:juspay/AI#juspay.omp
+AI_GATEWAY=0 nix run github:juspay/AI#omp
 ```
 
 This is the **same package**, with Juspay integration disabled for that launch.
@@ -34,29 +34,17 @@ variables. If you previously used the gateway, select your own models with
 
 ## Gateway initialization
 
-[`coding-agents/omp/default.nix`](../coding-agents/omp/default.nix) builds one
-launcher using the selected profile’s plugins and optional `gateway` attrset.
-Gateway initialization is guarded by `AI_GATEWAY != 0`. With the Juspay
-profile, the wrapper:
+The [agent-distro adapters](https://github.com/juspay/agent-distro#readme)
+implement gateway initialization from this repo's [`profile.nix`](../profile.nix).
+With the gateway enabled, OMP uses `https://grid.ai.juspay.net` and your
+`LITELLM_API_KEY`, discovering available models and their limits at runtime.
+No model catalog is vendored here.
 
-1. **Ensures the gateway key**, prompting for `LITELLM_API_KEY` if it is unset.
-2. **Points omp at the gateway** with `LITELLM_BASE_URL`. OMP ships LiteLLM
-   discovery, so this flake vendors **no model list at all**: omp asks the
-   gateway what it serves — ids, context windows, capabilities — at startup.
-   What the model picker shows is what your key can actually call, with the
-   limits the gateway enforces.
-3. **Loads two extension roots** on omp's own command line — the store-built
-   juspay/skills input (`-e /nix/store/…-source`) and kolu's own
-   agent plugin (`-e /nix/store/…/agent-plugin`). CLI extension roots are added
-   to whatever `extensions:` your settings already list, so these and your own
-   extensions compose.
-4. **Fills missing model roles and settings on every launch.** In
-   `~/.omp/agent/config.yml`, absent `default` / `task` / `slow` roles get
-   `litellm/open-large`, and an absent `smol` role gets `litellm/open-fast`. This
-   also repairs older configs so workers and reviewers have explicit defaults
-   independent of the primary. `task.showResolvedModelBadge` is switched on the
-   same way, so task rows name the model each subagent actually resolved to
-   instead of hiding it.
+On launch, missing `default`, `task`, and `slow` model roles receive
+`litellm/open-large`; an absent `smol` role receives `litellm/open-fast`.
+The launcher also defaults `task.showResolvedModelBadge` to true, so task rows
+show the model each subagent resolved to. Both Juspay skills and Kolu load
+alongside your own extensions.
 
 That config file is **yours** — the ordinary settings file `/model` and
 `/settings` write to. Existing role assignments, unrelated settings, and YAML
@@ -81,9 +69,7 @@ omp
 Everything else is ordinary omp: `--model litellm/kimi-k3` to start elsewhere,
 `ctrl+p` to cycle role models, `/switch` to change provider.
 
-The `omp` binary itself is **upstream's own build**: this flake takes it from
-[upstream's flake](https://github.com/can1357/oh-my-pi/blob/main/flake.nix) pinned
-to a release tag, and adds only the wrapper above and the skills plugin. If you
-would rather manage OMP declaratively, upstream also ships `programs.omp` Home
-Manager and NixOS modules — this flake does not use them, and the package here is
-a wrapper, not a module.
+The `omp` binary is upstream's own build, pinned to a release tag by
+[agent-distro](https://github.com/juspay/agent-distro#readme). That repository
+owns packaging and adapter mechanisms; this distribution owns the Juspay
+profile and follows its framework pin.

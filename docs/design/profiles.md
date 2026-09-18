@@ -1,51 +1,30 @@
-# Generalizing juspay/AI: profiles
+# Profiles and distributions
 
-Status: phase 1 implemented; the remaining phases below are planned.
-
-## Goal
-
-Today this repo is useful to Juspay employees: three harnesses (OMP, Codex,
-Claude Code) launched with juspay/skills, the Kolu plugin, and, for OMP, Juspay's
-LiteLLM gateway. The goal is to make it useful to the general public, and to let
-other organisations and communities (Ekala first) ship their own bundle.
-
-"Harness" here means what the repo's code calls a coding agent: `omp`, `codex`,
-`claude`. The repo keeps the name `juspay/AI`.
-
-## Principles
-
-- **Profiles are harness-independent.** A profile never names a harness. Every
-  profile works on every harness this repo supports (claude, codex, omp). Adding
-  a harness is a change to this repo, and all profiles get it.
-- **One plugin format.** A plugin is a directory in the harness-neutral
-  [Agent Plugins](https://agent-plugins.org) 1.0.0 layout: root `plugin.json`,
-  `skills/<name>/SKILL.md`, optional `mcp.json`. Translating that into each
-  harness's own layout is the harness adapter's job, as it is today.
-- **Plugins are the only composable unit.** There is no separate "role" concept.
-- **Framework first.** The core is a Nix library that others use to ship their
-  own distribution. This repo also ships ready-made profiles so individuals can
-  just `nix run`.
-- **Build-time composition, runtime choice.** Profiles are Nix values. The
-  default app lets the user pick among the in-repo profiles.
+The framework is [agent-distro](https://github.com/juspay/agent-distro).
+`juspay/AI` is a single-profile distribution built with its `lib.mkFlake`.
+Adapters, harness packaging pins, pickers, and reusable VM tests live upstream;
+this repository supplies Juspay's profile, documentation, and test selection.
 
 ## Model
 
-A profile is plain data: a list of plugins, an optional gateway, and a
-description.
+A profile is harness-independent data: a name, description, portable plugins,
+and an optional LiteLLM gateway. Plugins use the
+[Agent Plugins](https://agent-plugins.org) layout: root `plugin.json`,
+`skills/<name>/SKILL.md`, and optional `mcp.json`. Harness adapters translate
+that data to each harness's own format. Plugins are the composable unit;
+profiles combine their plugin lists with ordinary Nix.
 
 ```nix
-# profiles/juspay.nix
-{ sources }: {
+# profile.nix
+{ juspay-skills, kolu }: {
+  name = "juspay";
   description = "Juspay skills + Kolu, via Juspay's LiteLLM gateway";
-  plugins = [
-    sources.juspay-skills
-    "${sources.kolu}/agent-plugin"
-  ];
+  plugins = [ juspay-skills "${kolu}/agent-plugin" ];
   gateway = {
     url = "https://grid.ai.juspay.net";
     keyEnv = "LITELLM_API_KEY";
     models = { large = "open-large"; small = "open-fast"; };
-    keyHint = "Requires Juspay VPN";
+    keyHint = "Requires Juspay VPN to access the dashboard";
   };
 }
 ```
@@ -54,194 +33,114 @@ In-repo profiles:
 
 | Profile | Plugins | Gateway |
 |---|---|---|
-| `vanilla` | none | none |
-| `kolu` | kolu | none |
 | `juspay` | juspay/skills, kolu | Juspay LiteLLM |
-| `ekala` (planned, phase 1 of Phasing) | ekala skills | none |
 
-`vanilla` is the baseline for public users: the Nix-packaged harnesses with
-daily CI-verified updates and nothing else.
-
-### Plugins
-
-A plugin is a path to an Agent Plugins directory. There are no constructors or
-format converters.
-
-- juspay/skills ships a root `plugin.json`, so the flake input itself is the
-  plugin. `coding-agents/plugin.nix`, which rebuilds that manifest, is deleted.
-- Kolu ships its plugin at `agent-plugin/`, passed through as today.
-- ekala-claude-skills has harness-neutral `skills/<name>/SKILL.md` directories,
-  but its only manifest is `.claude-plugin/plugin.json`. We send Ekala a PR
-  adding a root Agent Plugins `plugin.json`, the way juspay/skills ships one
-  alongside its Claude and OMP marketplace files. The `ekala` profile lands
-  after that PR merges.
+Vanilla is agent-distro's default: upstream harnesses without plugins or a
+gateway. Third parties publish their own distributions; see
+[agent-distro's README](https://github.com/juspay/agent-distro#readme).
 
 ### Gateway
 
-`gateway` describes one LiteLLM proxy: `{ url; keyEnv; models; keyHint; }`.
-LiteLLM is the only kind of gateway; there is no provider abstraction.
+Only OMP uses the profile's gateway. Its adapter prompts for the key when
+needed, sets LiteLLM environment and absent model defaults, and skips provider
+onboarding. Without a gateway, OMP uses its own login and provider settings.
+`AI_GATEWAY=0` disables gateway initialization at runtime while keeping plugins.
+`JUSPAY=0` remains a deprecated alias for one release.
 
-- The gateway applies to OMP only, by design. Codex and Claude Code always use
-  their own login, whatever the profile says.
-- `gateway.nix`, `juspay.nix` and `ensure-api-key.nix` become the OMP adapter's
-  handling of `profile.gateway`: prompt for `keyEnv` if unset, export
-  `LITELLM_BASE_URL`, fill absent `modelRoles` with `litellm/<models.*>`, set
-  `OMP_SKIP_SETUP=1`. Any organisation with a LiteLLM proxy can use it.
-- A profile without `gateway` leaves OMP on its own `/login` and provider
-  settings.
-- `AI_GATEWAY=0` skips the gateway at runtime without changing Nix outputs. It
-  replaces `JUSPAY=0`, which is honoured for one release with a deprecation
-  message.
-- When a profile has a gateway, the picker labels Codex and Claude Code "uses
-  its own login".
-
-### Composition
-
-Profiles compose with plain Nix (`plugins = kolu.plugins ++ [ ... ]`). There is
-no `imports` mechanism.
+Codex and Claude Code always use their own login. The picker labels them
+"uses its own login" when the profile has a gateway. Profile naming and
+metadata also supply picker text and the Codex marketplace name, `juspay-ai`.
 
 ### Library entry points
 
-- `lib.mkLaunchers { pkgs; profile; }` returns `{ omp, codex, claude, picker }`.
-- `lib.mkFlake { profile; }` returns a whole flake's outputs for a
-  single-profile distribution.
-- `lib.selectSkills plugin [ "nix-build" ... ]` returns a plugin holding only the
-  named skills, so a profile can combine parts of several sources.
+These live in agent-distro:
 
-Evaluation fails, naming both paths, when two plugins in a profile share a
-plugin name or a skill name.
-
-A third party's flake:
+- `lib.mkLaunchers { pkgs; profile; }` returns `omp`, `codex`, `claude`, and `picker`.
+- `lib.mkFlake { profile; }` implements a single-profile distribution's outputs.
+- `lib.selectSkills plugin [ "nix-build" ... ]` and evaluation-time plugin/skill
+  name collision checks are still planned there.
 
 ```nix
-# github:ekala-project/ai
-outputs = { AI, ekala-skills, ... }:
-  AI.lib.mkFlake { profile = { plugins = [ ekala-skills ]; }; };
+outputs = { agent-distro, my-skills, ... }:
+  agent-distro.lib.mkFlake {
+    profile = {
+      name = "my-team";
+      description = "My team's harnesses";
+      plugins = [ my-skills ];
+      gateway = null;
+    };
+  };
 ```
 
 ### Flake outputs
 
-- `packages.<system>.default`: the profile picker, then the harness picker.
-- `packages.<system>.<profile>`: that profile's harness picker.
-- `legacyPackages.<system>.<profile>.<harness>`: one harness, launched directly.
+- `packages.<system>.{default,omp,codex,claude}` and matching `apps`.
+- `profiles.juspay`: resolved profile data with plugin sources already bound.
 
+The default package is the harness picker, binary `ai`:
+
+```bash
+nix run github:juspay/AI
+nix run github:juspay/AI#omp
+AI_HARNESS=codex nix run github:juspay/AI
 ```
-nix run github:juspay/AI              # pick profile, then harness
-nix run github:juspay/AI#juspay       # juspay profile, pick harness
-nix run github:juspay/AI#juspay.omp   # no prompts
-```
 
-`AI_PROFILE` and `AI_HARNESS` make the pickers non-interactive.
-
-Why the split: `nix flake check` requires every `packages.<system>.*` to be a
-derivation, so `packages.<system>.juspay.omp` fails it (verified: `flake
-attribute 'packages.x86_64-linux.juspay' is not a derivation`). `legacyPackages`
-may nest and is not checked, and `nix run` searches `packages` then
-`legacyPackages`, so both forms above resolve. The pickers stay in `packages`
-because `nix run .#juspay` needs a derivation at that path: Nix does not fall
-back to `juspay.default` inside a nested attrset (verified). `nix flake show`
-lists the pickers and omits `legacyPackages`.
-
-CI builds every output with devour-flake, which covers `packages`, `apps`,
-`checks` and `devShells` but not `legacyPackages`. Each picker `exec`s its
-launchers, so building `packages.<system>.<profile>` builds and caches all of
-that profile's launchers; CI needs no per-launcher list.
-
-The flake also exports `profiles.<name>`: each in-repo profile as a resolved
-attrset (sources already bound), so consumers can pass it to `lib.mkLaunchers`,
-with or without overrides.
+There is no profile picker, `AI_PROFILE`, or `legacyPackages` output.
+`AI_HARNESS` makes harness selection noninteractive. Each direct package
+exports its harness binary, and the picker references all three launchers.
+CI builds the four flat package outputs and uses devour-flake for cache builds.
 
 ### Installing on NixOS
 
-The launchers are ordinary packages. Each `<profile>.<harness>` puts a
-`bin/<harness>` on `PATH`, so one profile per harness can be installed at a
-time.
-
 ```nix
-environment.systemPackages = with ai.legacyPackages.${pkgs.system}.juspay; [
+environment.systemPackages = with ai.packages.${pkgs.system}; [
   omp
   codex
   claude
 ];
 ```
 
-Equivalent, via the lib, which is also how a customised profile is installed:
+For customization, use agent-distro's library and the resolved profile:
 
 ```nix
-environment.systemPackages = builtins.attrValues (ai.lib.mkLaunchers {
+environment.systemPackages = builtins.attrValues (agent-distro.lib.mkLaunchers {
   inherit pkgs;
-  profile = ai.profiles.juspay;   # or: ai.profiles.juspay // { gateway = null; }
+  profile = ai.profiles.juspay // { gateway = null; };
 });
 ```
 
-As with `nix run`, OMP prompts for `LITELLM_API_KEY` unless it is exported, and
-Kolu's MCP server needs `kolu` on `PATH`. The phase 4 Home Manager module
-reduces this to `programs.ai.profile = "juspay";`.
-
-The harness binaries are shared across profiles; only the plugin directories
-differ. The default picker already pulls in all three harnesses today, so
-`#default` adds only those directories to the closure.
-
-### Branding
-
-These derive from the profile name and description:
-
-- Codex marketplace name (`juspay-ai` today).
-- Picker text.
-- API-key prompt wording.
+OMP prompts for `LITELLM_API_KEY` unless exported or the gateway is disabled.
+Kolu's MCP server needs `kolu` on `PATH`. The Home Manager module is
+planned in agent-distro (Phasing, item 2).
 
 ### Tests
 
-The VM tests cover:
+`test/flake.nix` selects all twelve applicable checks from agent-distro's test
+library against this distribution's packages and profile. Coverage includes
+all three harnesses, gateway defaults and opt-out, the deprecation line,
+the picker's own-login label, isolated Kolu MCP fixtures, and second-build
+plugin re-registration/re-path tests from #181. `just test` uses the
+test flake's relative `path:..` input to select the parent checkout. Vanilla and
+generic framework coverage belong to agent-distro.
 
-- the `juspay` profile on all three harnesses (plugins, MCP, gateway),
-- the `vanilla` profile on OMP (no gateway, no plugins),
-- both pickers through a PTY.
+## Relation to agent-skills-nix
 
-## Relation to Kyure-A/agent-skills-nix
-
-That project installs skills into the user's home (Home Manager, or a sync
-script) for ten targets, with flake-pinned sources, discovery, selection, and
-bundling. Its plugin export is skills-only, rejects MCP servers, and emits a
-Codex-specific manifest.
-
-This repo launches ephemeral wrapped harnesses with MCP and a gateway, and Kolu
-needs MCP. We do not depend on agent-skills-nix. We take these ideas from it:
-
-- skill-level selection (`lib.selectSkills`),
-- eval-time collision checks,
-- a catalog app,
-- Home Manager and devShell delivery of the same profile value.
-
-We do not take its npins source registry. Community profile sources are
-`flake = false` inputs, updated by the existing daily `nix flake update` job.
-
-## Community list
-
-Third parties publish from their own flake via the lib. This repo also keeps an
-opt-in list of community profiles that its picker offers.
-
-- Entries are data only: sources plus a plugin list, no arbitrary Nix. Review
-  means checking which repositories an entry points at.
-- CI builds each profile separately. A community profile that fails to build is
-  pinned back to its last good revision and does not block `#default`.
-- Skills are a prompt-injection surface. The picker shows each profile's
-  sources, and the daily update PR shows skill diffs for community entries.
+[Kyure-A/agent-skills-nix](https://github.com/Kyure-A/agent-skills-nix) installs
+skills into a user's home. Agent-distro instead launches wrapped harnesses
+with plugins, MCP, and an optional gateway; Kolu needs MCP. The framework does
+not depend on agent-skills-nix. Skill selection, collision checks, a catalog,
+and Home Manager/devShell delivery remain useful planned framework features.
+Plugin sources here are `flake = false` inputs updated by daily CI.
 
 ## Phasing
 
-1. **Ekala.**
-   - Root `plugin.json` PR to ekala-claude-skills.
-   - `profiles/ekala.nix`, after the PR merges.
-   - `lib.selectSkills` and collision checks.
-2. **Distribution support.**
-   - `lib.mkFlake`.
-   - A `nix flake init -t github:juspay/AI` template.
-   - A "ship your own distribution" doc.
-   - Ekala moves to its own repo.
-3. **Discovery and delivery.**
-   - `nix run .#catalog`: JSON of profiles, plugins and skills, which also feeds
-     picker descriptions and a generated README table.
-   - Community list.
-   - Home Manager module (`programs.ai.profile = ...`).
-   - devShell helper, so a project declares its own profile in its flake.
+Remaining work belongs in agent-distro or a separate distribution:
+
+1. **Ekala and composition.** Add a root Agent Plugins manifest to Ekala's
+   skills, publish its own distribution, and implement `lib.selectSkills`
+   and plugin/skill name collision checks in agent-distro.
+2. **Discovery and delivery.** Explore a catalog of profiles/plugins/skills,
+   an opt-in community distribution list, a Home Manager module, and a devShell
+   helper in agent-distro. A community list should show source repositories,
+   review entries as data, test distributions independently, and expose skill
+   changes in update reviews.

@@ -1,8 +1,8 @@
-{ sources }:
+{ juspay-skills, kolu }:
 {
   name = "juspay";
   description = "Juspay skills + Kolu, via Juspay's LiteLLM gateway";
-  plugins = [ sources.juspay-skills "${sources.kolu}/agent-plugin" ];
+  plugins = [ juspay-skills "${kolu}/agent-plugin" ];
   gateway = {
     url = "https://grid.ai.juspay.net";
     keyEnv = "LITELLM_API_KEY";

@@ -2,10 +2,10 @@
   description = "Demo screencast generator";
 
   inputs = {
-    ai.url = "github:juspay/AI";
-    nixpkgs.follows = "ai/nixpkgs";
+    ai.url = "path:..";
+    nixpkgs.follows = "ai/agent-distro/nixpkgs";
 
-    # Pinned for vhs 0.11.0: vhs 0.12.0 (what ai/nixpkgs carries) runs the whole
+    # Pinned for vhs 0.11.0: vhs 0.12.0 (what ai/agent-distro/nixpkgs carries) runs the whole
     # tape, prints "Creating <file>…", exits 0 and writes no GIF — re-check when
     # bumping this, and drop the pin once nixpkgs' vhs records again.
     vhs-nixpkgs.url = "github:NixOS/nixpkgs/2c423e03bbafcff28bfadc6781a4a8257f205cb5";

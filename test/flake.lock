@@ -5,6 +5,7 @@
         "claude-code": "claude-code",
         "codex-cli": "codex-cli",
         "nixpkgs": [
+          "ai",
           "agent-distro",
           "oh-my-pi",
           "nixpkgs"
@@ -25,10 +26,27 @@
         "type": "github"
       }
     },
+    "ai": {
+      "inputs": {
+        "agent-distro": "agent-distro",
+        "juspay-skills": "juspay-skills",
+        "kolu": "kolu"
+      },
+      "locked": {
+        "path": "..",
+        "type": "path"
+      },
+      "original": {
+        "path": "..",
+        "type": "path"
+      },
+      "parent": []
+    },
     "bun2nix": {
       "inputs": {
         "flake-parts": "flake-parts",
         "nixpkgs": [
+          "ai",
           "agent-distro",
           "oh-my-pi",
           "nixpkgs"
@@ -54,6 +72,7 @@
       "inputs": {
         "flake-parts": "flake-parts_2",
         "nixpkgs": [
+          "ai",
           "agent-distro",
           "oh-my-pi",
           "nixpkgs-darwin-x64"
@@ -116,6 +135,7 @@
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": [
+          "ai",
           "agent-distro",
           "oh-my-pi",
           "bun2nix",
@@ -139,6 +159,7 @@
     "flake-parts_2": {
       "inputs": {
         "nixpkgs-lib": [
+          "ai",
           "agent-distro",
           "oh-my-pi",
           "bun2nix-darwin-x64",
@@ -212,6 +233,7 @@
     "nix-bun": {
       "inputs": {
         "nixpkgs": [
+          "ai",
           "agent-distro",
           "oh-my-pi",
           "nixpkgs"
@@ -321,14 +343,18 @@
     },
     "root": {
       "inputs": {
-        "agent-distro": "agent-distro",
-        "juspay-skills": "juspay-skills",
-        "kolu": "kolu"
+        "ai": "ai",
+        "nixpkgs": [
+          "ai",
+          "agent-distro",
+          "nixpkgs"
+        ]
       }
     },
     "rust-overlay": {
       "inputs": {
         "nixpkgs": [
+          "ai",
           "agent-distro",
           "oh-my-pi",
           "nixpkgs"
@@ -411,6 +437,7 @@
     "treefmt-nix": {
       "inputs": {
         "nixpkgs": [
+          "ai",
           "agent-distro",
           "oh-my-pi",
           "bun2nix",
@@ -434,6 +461,7 @@
     "treefmt-nix_2": {
       "inputs": {
         "nixpkgs": [
+          "ai",
           "agent-distro",
           "oh-my-pi",
           "bun2nix-darwin-x64",

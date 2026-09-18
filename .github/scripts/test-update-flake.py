@@ -1,5 +1,7 @@
-"""Check release policy and reporting offline, without opening a PR."""
+"""Check distribution update reporting offline, without opening a PR."""
 import os
+import json
+import shlex
 from itertools import product
 from pathlib import Path
 import subprocess
@@ -10,47 +12,32 @@ SCRIPTS = Path(__file__).resolve().parent
 
 
 class UpdateFlakeTests(unittest.TestCase):
-    def test_omp_pin_moves_only_forward(self):
-        cases = [
-            ('v18.2.4', 'v18.2.5', 'v18.2.5'),
-            ('v18.2.9', 'v18.2.10', 'v18.2.10'),
-            ('v18.2.4', 'v18.2.4', 'v18.2.4'),
-            ('v18.2.4', 'v18.2.3', 'v18.2.4'),
-            ('v18.2.4', 'invalid', None),
-            ('v18.2.4', '', None),
-            ('missing', 'v18.2.5', None),
-        ]
-        for before, latest, after in cases:
-            with self.subTest(before=before, latest=latest), tempfile.TemporaryDirectory() as directory:
-                root = Path(directory)
-                flake = root / 'flake.nix'
-                original = f'oh-my-pi.url = "github:can1357/oh-my-pi/{before}";\n'
-                flake.write_text(original)
-                gh = root / 'gh'
-                gh.write_text('#!/bin/sh\nprintf "%s\\n" "$TEST_LATEST"\n')
-                gh.chmod(0o755)
-                output = root / 'outputs'
-                env = dict(os.environ, PATH=f'{root}:{os.environ["PATH"]}',
-                           TEST_LATEST=latest, GITHUB_OUTPUT=str(output))
-                result = subprocess.run(['bash', str(SCRIPTS / 'advance-omp-pin.sh')],
-                                        cwd=root, env=env, capture_output=True, text=True)
-                if after is None:
-                    self.assertNotEqual(result.returncode, 0)
-                    self.assertEqual(flake.read_text(), original)
-                    self.assertFalse(output.exists())
-                else:
-                    self.assertEqual(result.returncode, 0, result.stderr)
-                    self.assertEqual(flake.read_text(), original.replace(before, after))
-                    self.assertEqual(output.read_text(), f'before={before}\nafter={after}\nlatest={latest}\n')
+    def test_omp_version_follows_framework_lock_edges(self):
+        # Node names can acquire suffixes when input graphs are combined.
+        workflow = (SCRIPTS.parent / 'workflows/update-flake.yml').read_text()
+        commands = [line.strip()[len('version=$('):-1]
+                    for line in workflow.splitlines() if 'version=$(jq ' in line]
+        self.assertEqual(len(commands), 2)
+        lock = {"nodes": {
+            "root": {"inputs": {"agent-distro": "framework_2"}},
+            "framework_2": {"inputs": {"oh-my-pi": "omp_2"}},
+            "omp_2": {"original": {"ref": "v18.2.4"}},
+            "oh-my-pi": {"original": {"ref": "wrong-node"}},
+        }}
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / 'flake.lock').write_text(json.dumps(lock))
+            for command in commands:
+                result = subprocess.run(shlex.split(command), cwd=directory,
+                                        check=True, capture_output=True, text=True)
+                self.assertEqual(result.stdout.strip(), 'v18.2.4')
 
     def test_report_uses_resolved_versions_and_preserves_lock_log(self):
         for omp_changed, codex_changed, claude_changed in product([False, True], repeat=3):
             with self.subTest(omp=omp_changed, codex=codex_changed, claude=claude_changed), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
-                (root / 'flake-update.log').write_text('skills revision changed\n')
+                (root / 'flake-update.log').write_text('framework and skills revisions changed\ntest lock updated\n')
                 env = dict(os.environ, OMP_BEFORE='v18.2.4',
                            OMP_AFTER='v18.2.5' if omp_changed else 'v18.2.4',
-                           OMP_LATEST='v18.2.5' if omp_changed else 'v18.2.3',
                            CODEX_BEFORE='0.153.0', CODEX_AFTER='0.154.0' if codex_changed else '0.153.0',
                            CLAUDE_BEFORE='2.1.273', CLAUDE_AFTER='2.1.274' if claude_changed else '2.1.273',
                            GITHUB_SERVER_URL='https://github.com', GITHUB_REPOSITORY='juspay/AI',
@@ -58,7 +45,7 @@ class UpdateFlakeTests(unittest.TestCase):
                 subprocess.run(['python3', str(SCRIPTS / 'describe-flake-update.py')], env=env, check=True)
                 outputs = dict(line.split('=', 1) for line in (root / 'outputs').read_text().splitlines())
                 body = Path(outputs['pr-body-path']).read_text()
-                self.assertIn('skills revision changed', body)
+                self.assertIn('framework and skills revisions changed\ntest lock updated', body)
                 self.assertIn('https://github.com/juspay/AI/actions/runs/123', body)
                 self.assertEqual('oh-my-pi v18.2.4 → v18.2.5' in outputs['pr-title'], omp_changed)
                 self.assertEqual('Codex 0.153.0 → 0.154.0' in outputs['pr-title'], codex_changed)
@@ -71,8 +58,11 @@ class UpdateFlakeTests(unittest.TestCase):
                     self.assertIn('/releases/tag/rust-v0.154.0', body)
                 else:
                     self.assertIn('Codex unchanged (`0.153.0`)', body)
-                if not omp_changed:
-                    self.assertIn('the pin only moves forward', body)
+                if omp_changed:
+                    self.assertIn('/releases/tag/v18.2.5', body)
+                else:
+                    self.assertIn('oh-my-pi unchanged (`v18.2.4`)', body)
+                self.assertIn('OMP release selection happens there', body)
 
 
 if __name__ == '__main__':
