@@ -31,8 +31,6 @@ just test
 
 The test lock pins a published AI revision for standalone use; the override
 in `just test` always selects the checkout, including its current dependency pins.
-During this migration, agent-distro is pinned to its PR 1 `init` branch. Switch
-the URL to its default branch and re-lock after that PR merges.
 
 ## Daily updates
 

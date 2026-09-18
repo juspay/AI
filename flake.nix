@@ -9,8 +9,7 @@
   inputs = {
     # Framework, adapters, pickers, and harness pins. Harness versions follow
     # agent-distro; our daily update moves it and Juspay's plugin sources.
-    # Re-lock to the default branch once agent-distro PR 1 merges.
-    agent-distro.url = "github:juspay/agent-distro/init";
+    agent-distro.url = "github:juspay/agent-distro";
 
     # Portable skill sources. Nothing is vendored into this repo; the shared
     # profiles use juspay/skills directly, while kolu's plugin is passed through whole.
