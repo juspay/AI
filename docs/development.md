@@ -19,7 +19,11 @@ All twelve applicable checks are selected: harness discovery, the PTY picker
 and its own-login labels, gateway defaults and environment, `AI_GATEWAY=0`,
 the `JUSPAY=0` deprecation, Kolu MCP fixtures, and same-home second-build
 plugin tests for Codex marketplace re-registration and Claude/OMP path changes.
-Tests use real harnesses without model calls.
+Tests use real harnesses without model calls. `test/omp-readiness.patch` is a
+local test-library fix to upstream: it waits for ACP initialization/session
+responses with a bounded timeout instead of fixed sleeps, preserving all
+skill-set and second-build assertions. Applying it during evaluation requires
+Nix's default import-from-derivation support.
 
 Update the root lock first, then the test lock:
 
