@@ -25,9 +25,8 @@
   };
 
   outputs = { self, agent-distro, juspay-skills, kolu }:
-    let profile = import ./profile.nix { inherit juspay-skills kolu; };
-    in agent-distro.lib.mkFlake { inherit profile; } // {
+    agent-distro.lib.mkFlake { profile = self.profiles.juspay; } // {
       # Resolved data for consumers, including overrides such as gateway = null.
-      profiles.juspay = profile;
+      profiles.juspay = import ./profile.nix { inherit juspay-skills kolu; };
     };
 }
