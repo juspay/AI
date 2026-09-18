@@ -9,7 +9,16 @@ in
   name = "codex";
   nodes.machine = { pkgs, ... }: {
     imports = [ common.baseNode ];
-    environment.systemPackages = [ ai.legacyPackages.${pkgs.stdenv.hostPlatform.system}.juspay.codex pkgs.python3 ];
+    environment.systemPackages = [
+      ai.legacyPackages.${pkgs.stdenv.hostPlatform.system}.juspay.codex
+      (pkgs.writeShellScriptBin "codex-updated" ''
+        exec ${pkgs.lib.getExe (common.updatedLaunchers ai pkgs).codex} "$@"
+      '')
+      pkgs.python3
+      (pkgs.writeShellScriptBin "codex-upstream" ''
+        exec ${pkgs.lib.getExe ai.inputs.codex-cli.packages.${pkgs.stdenv.hostPlatform.system}.default} "$@"
+      '')
+    ];
   };
   testScript = ''
     import shlex

@@ -21,15 +21,24 @@ let
 in
 writeShellApplication {
   name = "codex";
+  runtimeInputs = [ jq ];
   derivationArgs.version = codex.version;
   text = lib.optionalString (plugins != [ ]) ''
-    # Use the native installer rather than writing Codex's cache layout. Install
-    # on every launch: portable sources need not bump a manifest version when
-    # their flake input changes. Codex preserves unrelated config and auth.
-    ${lib.getExe codex} plugin marketplace add ${marketplace} >/dev/null
-    while IFS= read -r plugin; do
-      ${lib.getExe codex} plugin add "$plugin" >/dev/null
-    done < ${marketplace}/plugin-ids
+    # The name stays fixed, but its store path changes between builds. Use the
+    # native installer only when that path changes, preserving disabled plugins
+    # on steady-state launches as well as unrelated config and auth.
+    marketplace=${marketplace}
+    registered=$(${lib.getExe codex} plugin marketplace list --json \
+      | jq -r --arg n ${lib.escapeShellArg marketplaceName} '.marketplaces[] | select(.name == $n) | .root')
+    if [ "$registered" != "$marketplace" ]; then
+      if [ -n "$registered" ]; then
+        ${lib.getExe codex} plugin marketplace remove ${lib.escapeShellArg marketplaceName} >/dev/null
+      fi
+      ${lib.getExe codex} plugin marketplace add "$marketplace" >/dev/null
+      while IFS= read -r plugin; do
+        ${lib.getExe codex} plugin add "$plugin" >/dev/null
+      done < "$marketplace/plugin-ids"
+    fi
   '' + ''
     exec ${lib.getExe codex} "$@"
   '';

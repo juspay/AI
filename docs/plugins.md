@@ -57,22 +57,27 @@ the marketplace instead — see
 
 [`coding-agents/codex/default.nix`](../coding-agents/codex/default.nix) builds a
 local `<profile.name>-ai` marketplace in the Nix store, deriving plugin names
-from the portable manifests. For the Juspay profile, each launch runs upstream
-Codex's native commands:
+from the portable manifests. For the Juspay profile, each launch queries upstream
+Codex with `codex plugin marketplace list --json` to check the registered path.
+When the marketplace is absent or its store path has changed, it runs:
 
-1. `codex plugin marketplace add <store-marketplace>`
-2. `codex plugin add juspay-skills@juspay-ai`
-3. `codex plugin add kolu@juspay-ai`
-4. `codex` with your original arguments.
+1. `codex plugin marketplace remove juspay-ai` if an old path is registered.
+2. `codex plugin marketplace add <store-marketplace>`
+3. `codex plugin add juspay-skills@juspay-ai`
+4. `codex plugin add kolu@juspay-ai`
+
+It then launches `codex` with your original arguments. A steady-state launch
+only queries the marketplace and skips registration and plugin installation.
 
 Vanilla skips marketplace registration and plugin installation entirely.
 
 These commands register the marketplace and install/enable the two plugins in
 `~/.codex`, or `CODEX_HOME` when set. They preserve unrelated configuration,
-comments, login, sessions, skills, and MCP servers. The wrapper owns these two
-bundled installations and reinstalls them on each launch, including `--version`:
-flake updates can change plugin contents without changing a manifest version.
-Edits to those installed copies are therefore replaced on the next launch.
+comments, login, sessions, skills, and MCP servers. The wrapper installs these
+two bundled plugins when the marketplace store path changes, even without a
+manifest version bump. A plugin you disabled stays disabled until then, and a
+plugin you removed stays removed; on a path change, both plugins are reinstalled
+and enabled, replacing edits to their installed copies.
 Native installer errors stop launch; invalid configuration is not repaired or
 overwritten by the wrapper.
 

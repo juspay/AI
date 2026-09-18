@@ -12,6 +12,9 @@ in
     imports = [ common.baseNode ];
     environment.systemPackages = [
       ai.legacyPackages.${pkgs.stdenv.hostPlatform.system}.juspay.omp
+      (pkgs.writeShellScriptBin "omp-updated" ''
+        exec ${pkgs.lib.getExe (common.updatedLaunchers ai pkgs).omp} "$@"
+      '')
 
       # Asks OMP which skills it loaded, by driving a real session over ACP and
       # reading the /skill:<name> command it registers per discovered skill.
@@ -25,7 +28,7 @@ in
           sleep 3
           printf '%s\n' "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"session/new\",\"params\":{\"cwd\":\"$PWD\",\"mcpServers\":[]}}"
           sleep 10
-        } | timeout 40 omp acp 2>/dev/null \
+        } | timeout 40 "''${1:-omp}" acp 2>/dev/null \
           | grep -o '"name":"skill:[^"]*"' | sed 's/.*skill://;s/"$//' | sort -u
       '')
 
@@ -56,14 +59,15 @@ in
 
     CONFIG = "/home/testuser/.omp/agent/config.yml"
 
-    def loaded_skills():
+    def loaded_skills(launcher="omp", environment=""):
         """The skills OMP itself reports having loaded.
 
         OMP's discovery protocol changes independently of our plugin contents.
         Read the actual session commands, not generated wrapper shell source.
         Skill discovery happens before any model call, so no network is needed.
         """
-        return set(machine.succeed("su - testuser -c omp-list-skills").split())
+        command = environment + " omp-list-skills " + shlex.quote(launcher)
+        return set(machine.succeed("su - testuser -c " + shlex.quote(command)).split())
 
     def plugin_mcp_data_dirs():
         """Per-plugin data directories omp created for Agent Plugins MCP servers.
@@ -189,6 +193,16 @@ in
     assert skills == expected_skills, f"expected {sorted(expected_skills)}, loaded {sorted(skills)}"
     assert {"nix-haskell", "kolu"} <= skills
     print(f"OMP loaded all {len(skills)} expected skills")
+
+    # A rebuild changes the -e roots; existing configuration must still survive.
+    previous_config = machine.succeed(f"cat {CONFIG}")
+    previous_stat = machine.succeed(f"stat -c '%i %Y' {CONFIG}")
+    updated_version = run_as_user("AI_GATEWAY=0 omp-updated --version </dev/null")
+    assert updated_version == version, updated_version
+    updated_skills = loaded_skills("omp-updated", "AI_GATEWAY=0")
+    assert updated_skills == expected_skills, updated_skills
+    assert machine.succeed(f"cat {CONFIG}") == previous_config
+    assert machine.succeed(f"stat -c '%i %Y' {CONFIG}") == previous_stat
 
     # `kolu` in that set is already more than a skill check. A root whose
     # `plugin.json` targets the Agent Plugins standard is handled by the
