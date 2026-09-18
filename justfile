@@ -9,4 +9,4 @@ demo:
 
 # Run the wrapper package tests (NixOS VMs; Linux only)
 test:
-    nix flake check -L ./coding-agents/test/standalone --override-input ai .
+    nix flake check -L ./test --override-input ai .
