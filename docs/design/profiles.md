@@ -110,8 +110,8 @@ environment.systemPackages = builtins.attrValues (agent-distro.lib.mkLaunchers {
 ```
 
 OMP prompts for `LITELLM_API_KEY` unless exported or the gateway is disabled.
-Kolu's MCP server needs `kolu` on `PATH`. The phase 2 Home Manager module below
-is planned in agent-distro.
+Kolu's MCP server needs `kolu` on `PATH`. The Home Manager module is
+planned in agent-distro (Phasing, item 2).
 
 ### Tests
 
@@ -120,8 +120,8 @@ library against this distribution's packages and profile. Coverage includes
 all three harnesses, gateway defaults and opt-out, the deprecation line,
 the picker's own-login label, isolated Kolu MCP fixtures, and second-build
 plugin re-registration/re-path tests from #181. `just test` uses the
-test flake's relative `path:..` input to select the parent checkout. Vanilla and generic framework
-coverage belong to agent-distro.
+test flake's relative `path:..` input to select the parent checkout. Vanilla and
+generic framework coverage belong to agent-distro.
 
 ## Relation to agent-skills-nix
 

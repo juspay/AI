@@ -42,15 +42,16 @@ after the root lock keeps their transitive dependency pins in sync.
 ## Daily updates
 
 The daily workflow updates `agent-distro`, `juspay-skills`, and `kolu`, then
-updates the test and demo locks. OMP release-tag advancement happens in agent-distro;
-this repo follows its harness pins. The report reads OMP's `original.ref`
+updates the test and demo locks. OMP release-tag advancement happens in
+agent-distro; this repo follows its harness pins. The report reads OMP's `original.ref`
 from agent-distro's transitive lock node, and evaluates `codex.version` and
 `claude.version` from the distribution packages. It reports changed and
 unchanged versions and includes all three lock-update logs.
 
 CI builds all four packages on Linux and macOS, retains the devour-flake cache
-build, and runs `nix flake check -L ./test` directly on Linux. The update workflow invokes that same CI
-and merges its update PR only after verification succeeds.
+build, and runs `nix flake check -L ./test` directly on Linux. The update
+workflow invokes that same CI and merges its update PR only after verification
+succeeds.
 Gateway models are discovered at runtime, not snapshotted here.
 
 ## Architecture
