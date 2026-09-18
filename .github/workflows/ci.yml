@@ -61,12 +61,9 @@ jobs:
         run: |
           nix build --print-build-logs .#default .#omp .#codex .#claude
 
-      - uses: extractions/setup-just@v3
-        if: runner.os == 'Linux'
-
       - name: Wrapper package tests
         # The wrapper tests boot NixOS VMs, so they only run where a Linux
         # builder exists. `nix flake check` builds the whole checks set.
         if: runner.os == 'Linux'
         run: |
-          just test
+          nix flake check -L ./test

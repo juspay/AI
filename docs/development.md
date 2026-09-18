@@ -49,7 +49,7 @@ from agent-distro's transitive lock node, and evaluates `codex.version` and
 unchanged versions and includes all three lock-update logs.
 
 CI builds all four packages on Linux and macOS, retains the devour-flake cache
-build, and runs `just test` on Linux. The update workflow invokes that same CI
+build, and runs `nix flake check -L ./test` directly on Linux. The update workflow invokes that same CI
 and merges its update PR only after verification succeeds.
 Gateway models are discovered at runtime, not snapshotted here.
 
