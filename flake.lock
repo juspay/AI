@@ -1,9 +1,36 @@
 {
   "nodes": {
+    "agent-distro": {
+      "inputs": {
+        "claude-code": "claude-code",
+        "codex-cli": "codex-cli",
+        "nixpkgs": [
+          "agent-distro",
+          "oh-my-pi",
+          "nixpkgs"
+        ],
+        "oh-my-pi": "oh-my-pi"
+      },
+      "locked": {
+        "lastModified": 1789692201,
+        "narHash": "sha256-Ml1XJ7GWkGBvfdK9Gcyn3xnrNgBEqnn34W+jNmwn/A0=",
+        "owner": "juspay",
+        "repo": "agent-distro",
+        "rev": "4d070cd2119a3d584c54cc475d65b887f41017ca",
+        "type": "github"
+      },
+      "original": {
+        "owner": "juspay",
+        "ref": "init",
+        "repo": "agent-distro",
+        "type": "github"
+      }
+    },
     "bun2nix": {
       "inputs": {
         "flake-parts": "flake-parts",
         "nixpkgs": [
+          "agent-distro",
           "oh-my-pi",
           "nixpkgs"
         ],
@@ -28,6 +55,7 @@
       "inputs": {
         "flake-parts": "flake-parts_2",
         "nixpkgs": [
+          "agent-distro",
           "oh-my-pi",
           "nixpkgs-darwin-x64"
         ],
@@ -54,11 +82,11 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1789686093,
-        "narHash": "sha256-sH5iKPrCFF6jDEaQjZwDnC7tD4jYtYHJn4gBoou2sZ0=",
+        "lastModified": 1789607714,
+        "narHash": "sha256-Jay2MK0zBQP5DuTR+izZBobg7m93h0tKMXOYDZYW0xA=",
         "owner": "sadjow",
         "repo": "claude-code-nix",
-        "rev": "6407e4e63a2bddca88119f26322c7f2706aa896c",
+        "rev": "96942598f50150e88f94bf01295aee593c440824",
         "type": "github"
       },
       "original": {
@@ -73,11 +101,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1789692010,
-        "narHash": "sha256-701w5Fl6LqNTz4ISU5XUz6PeoTrgLqVyr9bXdl4tKwI=",
+        "lastModified": 1788995571,
+        "narHash": "sha256-I58IVp7HfT3TTKZJ5kh7/Lttu9DnRZFC0qmvxnIvIj4=",
         "owner": "sadjow",
         "repo": "codex-cli-nix",
-        "rev": "43f38448fbabf5c7edb2febf42011f74225694ee",
+        "rev": "33542c7e7139127a4bac1cbe0fac8c81a570410a",
         "type": "github"
       },
       "original": {
@@ -89,6 +117,7 @@
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": [
+          "agent-distro",
           "oh-my-pi",
           "bun2nix",
           "nixpkgs"
@@ -111,6 +140,7 @@
     "flake-parts_2": {
       "inputs": {
         "nixpkgs-lib": [
+          "agent-distro",
           "oh-my-pi",
           "bun2nix-darwin-x64",
           "nixpkgs"
@@ -183,6 +213,7 @@
     "nix-bun": {
       "inputs": {
         "nixpkgs": [
+          "agent-distro",
           "oh-my-pi",
           "nixpkgs"
         ]
@@ -235,11 +266,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1789370336,
-        "narHash": "sha256-6RSEDHIWQtesQKWSu5qRai8L2h4KgCgMEfJHstW99G4=",
+        "lastModified": 1788953386,
+        "narHash": "sha256-dIqD4NX3Uldk29CBqKt9dRdSxh/+Ba8lVPu2xEsLTJo=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "c7def046b9a883d46974757852106483d741586f",
+        "rev": "19a27817106f9449970edb3a398ab5349666466f",
         "type": "github"
       },
       "original": {
@@ -275,36 +306,31 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1789684455,
-        "narHash": "sha256-p32S9awDdTK+HZt/bzB/DDSEQM1GV/ey5gevkZq1+PM=",
+        "lastModified": 1789633504,
+        "narHash": "sha256-z07Nx7SUtdqcIc+Py5xwr6xZz4sDwply69dbhyTJ1L4=",
         "owner": "can1357",
         "repo": "oh-my-pi",
-        "rev": "37273117021129e96bd05d8277b140ec3fd61990",
+        "rev": "1c0303b1f2ec515cbf4b44a9a49d68a029531aac",
         "type": "github"
       },
       "original": {
         "owner": "can1357",
-        "ref": "v18.2.5",
+        "ref": "v18.2.4",
         "repo": "oh-my-pi",
         "type": "github"
       }
     },
     "root": {
       "inputs": {
-        "claude-code": "claude-code",
-        "codex-cli": "codex-cli",
+        "agent-distro": "agent-distro",
         "juspay-skills": "juspay-skills",
-        "kolu": "kolu",
-        "nixpkgs": [
-          "oh-my-pi",
-          "nixpkgs"
-        ],
-        "oh-my-pi": "oh-my-pi"
+        "kolu": "kolu"
       }
     },
     "rust-overlay": {
       "inputs": {
         "nixpkgs": [
+          "agent-distro",
           "oh-my-pi",
           "nixpkgs"
         ]
@@ -386,6 +412,7 @@
     "treefmt-nix": {
       "inputs": {
         "nixpkgs": [
+          "agent-distro",
           "oh-my-pi",
           "bun2nix",
           "nixpkgs"
@@ -408,6 +435,7 @@
     "treefmt-nix_2": {
       "inputs": {
         "nixpkgs": [
+          "agent-distro",
           "oh-my-pi",
           "bun2nix-darwin-x64",
           "nixpkgs"

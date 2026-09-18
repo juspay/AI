@@ -1,5 +1,5 @@
 {
-  description = "Oh My Pi, Codex, and Claude Code with selectable profiles";
+  description = "Juspay distribution of Oh My Pi, Codex, and Claude Code";
 
   nixConfig = {
     extra-substituters = "https://cache.nixos.asia/oss";
@@ -7,24 +7,10 @@
   };
 
   inputs = {
-    # Oh My Pi from upstream's own flake, pinned to a *release tag* rather than
-    # a branch. The tag is the whole point: `update-flake.yml` resolves the
-    # latest release daily and rewrites this ref, and the lock makes the pin
-    # reproducible in between.
-    oh-my-pi.url = "github:can1357/oh-my-pi/v18.2.5";
-
-    # Each packaging repo tracks its current release binary and keeps its own
-    # nixpkgs so packaging updates do not depend on OMP's build dependencies.
-    codex-cli.url = "github:sadjow/codex-cli-nix";
-    claude-code.url = "github:sadjow/claude-code-nix";
-
-    # Upstream's package set, followed rather than shadowed. omp is built from
-    # source there, so its derivation hash is the interface to every binary
-    # cache — ours included — and overriding `oh-my-pi.inputs.nixpkgs` would
-    # re-key that derivation for nothing. Following it here keeps the
-    # wrappers and VM tests on the same package set, using the very glibc the omp binary was linked against, instead of a second, newer
-    # one that could drift the other way.
-    nixpkgs.follows = "oh-my-pi/nixpkgs";
+    # Framework, adapters, pickers, and harness pins. Harness versions follow
+    # agent-distro; our daily update moves it and Juspay's plugin sources.
+    # Re-lock to the default branch once agent-distro PR 1 merges.
+    agent-distro.url = "github:juspay/agent-distro/init";
 
     # Portable skill sources. Nothing is vendored into this repo; the shared
     # profiles use juspay/skills directly, while kolu's plugin is passed through whole.
@@ -39,44 +25,10 @@
     kolu = { url = "github:juspay/kolu"; flake = false; };
   };
 
-  outputs = { self, nixpkgs, oh-my-pi, codex-cli, claude-code, juspay-skills, kolu }:
-    let
-      systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
-      forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
-      pkgsFor = system: import nixpkgs { inherit system; };
-    in
-    {
-      profiles = nixpkgs.lib.genAttrs [ "vanilla" "kolu" "juspay" ]
-        (name: import (./profiles + "/${name}.nix") {
-          sources = { inherit juspay-skills kolu; };
-        });
-
-      lib.mkLaunchers = import ./lib/mk-launchers.nix {
-        inherit oh-my-pi codex-cli claude-code;
-      };
-
-      legacyPackages = forAllSystems (system:
-        nixpkgs.lib.mapAttrs (_: profile: self.lib.mkLaunchers {
-          pkgs = pkgsFor system;
-          inherit profile;
-        }) self.profiles
-      );
-
-      packages = forAllSystems (system:
-        let
-          pkgs = pkgsFor system;
-          launchers = self.legacyPackages.${system};
-        in
-        nixpkgs.lib.mapAttrs (_: value: value.picker) launchers // {
-          default = pkgs.callPackage ./coding-agents/profile-picker.nix {
-            inherit launchers;
-            inherit (self) profiles;
-          };
-        }
-      );
-
-      apps = forAllSystems (system:
-        nixpkgs.lib.mapAttrs (_: pkg: { program = nixpkgs.lib.getExe pkg; type = "app"; }) self.packages.${system}
-      );
+  outputs = { self, agent-distro, juspay-skills, kolu }:
+    let profile = import ./profile.nix { inherit juspay-skills kolu; };
+    in agent-distro.lib.mkFlake { inherit profile; } // {
+      # Resolved data for consumers, including overrides such as gateway = null.
+      profiles.juspay = profile;
     };
 }
