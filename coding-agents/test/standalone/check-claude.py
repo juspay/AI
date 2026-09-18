@@ -24,14 +24,14 @@ session.write_text('session sentinel\n')
 preserved = {path: path.read_bytes() for path in [settings, credentials, session]}
 
 
-def run(*args):
-    return subprocess.run(['claude', *args], env=env, text=True,
+def run(*args, launcher='claude'):
+    return subprocess.run([launcher, *args], env=env, text=True,
                           capture_output=True, timeout=60, check=True).stdout
 
 
-def inventory(plugin):
+def inventory(plugin, launcher='claude'):
     # Claude's own inventory, rather than inspecting the translated files.
-    details = run('plugin', 'details', plugin)
+    details = run('plugin', 'details', plugin, launcher=launcher)
     match = re.search(r'^\s*Skills \((\d+)\)\s+([^\n]+)', details, re.MULTILINE)
     assert match, details
     names = set(match[2].split(', '))
@@ -69,6 +69,18 @@ personal = home / 'personal plugin'
 (personal / 'skills/personal/SKILL.md').write_text('---\nname: personal\ndescription: Personal skill\n---\n')
 extra = json.loads(run('--plugin-dir', str(personal), 'plugin', 'list', '--json'))
 assert {p['id'] for p in extra} == {'juspay-skills@inline', 'kolu@inline', 'personal@inline'}, extra
+
+# A second build must discover its new roots in the same existing home.
+updated = json.loads(run('plugin', 'list', '--json', launcher='claude-updated'))
+assert {p['id'] for p in updated} == {'juspay-skills@inline', 'kolu@inline'}, updated
+previous_paths = {p['installPath'] for p in plugins}
+assert all(p['enabled'] and p['scope'] == 'session' for p in updated), updated
+assert all(p['installPath'].startswith('/nix/store/') and
+           p['installPath'] not in previous_paths for p in updated), updated
+assert inventory('juspay-skills', launcher='claude-updated')[0] == expected
+updated_skills, updated_details = inventory('kolu', launcher='claude-updated')
+assert updated_skills == {'kolu'}
+assert re.search(r'MCP servers \(1\)\s+kolu\b', updated_details), updated_details
 
 for path, contents in preserved.items():
     assert path.read_bytes() == contents, path

@@ -11,6 +11,9 @@ in
     imports = [ common.baseNode ];
     environment.systemPackages = [
       ai.legacyPackages.${pkgs.stdenv.hostPlatform.system}.juspay.claude
+      (pkgs.writeShellScriptBin "claude-updated" ''
+        exec ${pkgs.lib.getExe (common.updatedLaunchers ai pkgs).claude} "$@"
+      '')
       pkgs.python3
       (pkgs.writeShellScriptBin "kolu" ''
         exec ${pkgs.python3}/bin/python ${./kolu-mcp-fixture.py} "$@"
