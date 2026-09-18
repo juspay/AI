@@ -67,7 +67,8 @@ When the marketplace is absent or its store path has changed, it runs:
 4. `codex plugin add kolu@juspay-ai`
 
 It then launches `codex` with your original arguments. A steady-state launch
-only queries the marketplace and skips registration and plugin installation.
+only queries the marketplace and skips registration and plugin installation,
+so it still invokes Codex once for the list query before the requested command.
 
 Vanilla skips marketplace registration and plugin installation entirely.
 

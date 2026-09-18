@@ -60,6 +60,17 @@ for plugin_id in ['juspay-skills@juspay-ai', 'kolu@juspay-ai']:
     plugin = installed_plugins()[plugin_id]
     assert plugin['installed'] and plugin['enabled'], plugin
 
+# Check the store-path regression before steady-state preferences, so reverting
+# the adapter fails at the second build with Codex's different-source error.
+launcher = 'codex-updated'
+relaunch = run('--version')
+assert relaunch.returncode == 0, relaunch.stderr
+assert 'codex-cli' in relaunch.stdout
+assert marketplace_root() != first_marketplace
+launcher = 'codex'
+run('--version', check=True)
+assert marketplace_root() == first_marketplace
+
 # Codex 0.154.0 has no `plugin disable` command; use its persistent setting.
 enabled_setting = '[plugins."juspay-skills@juspay-ai"]\nenabled = true'
 disabled_setting = '[plugins."juspay-skills@juspay-ai"]\nenabled = false'
@@ -151,6 +162,14 @@ bundled = {name for name in skills if name.startswith(('juspay-skills:', 'kolu:'
 assert bundled == expected_names, (bundled, expected_names)
 assert 'personal' in skills
 
+# Removing a plugin also stays in effect until a different build is launched.
+# Run this after the preservation checks: Codex's explicit remove command
+# deletes that plugin's own configuration, including its MCP preferences.
+launcher = 'codex'
+run('--version', check=True)
+assert marketplace_root() == first_marketplace
+skills = loaded_skills()
+
 # A steady-state launch must leave cached contents alone.
 # Use Codex's reported path instead of assuming its private cache layout.
 cached_skill = Path(skills['juspay-skills:nix-haskell']['path'])
@@ -160,12 +179,6 @@ cached_skill.write_text(cached_contents)
 run('--version', check=True)
 assert cached_skill.read_text() == cached_contents
 
-# Removing a plugin also stays in effect until a different build is launched.
-# Run this after the preservation checks: Codex's explicit remove command
-# deletes that plugin's own configuration, including its MCP preferences.
-launcher = 'codex'
-run('--version', check=True)
-assert marketplace_root() == first_marketplace
 upstream('plugin', 'remove', 'kolu@juspay-ai')
 assert 'kolu@juspay-ai' not in installed_plugins()
 removed_config = config.read_bytes()
@@ -176,6 +189,11 @@ assert config.read_bytes() == removed_config
 launcher = 'codex-updated'
 run('--version', check=True)
 assert marketplace_root() == store_marketplace
+# The changed path must replace the edited cache with the real bundled skill.
+reinstalled_skills = loaded_skills()
+reinstalled_skill = Path(reinstalled_skills['juspay-skills:nix-haskell']['path'])
+assert reinstalled_skill.read_text() != cached_contents
+assert reinstalled_skill.read_text() == (Path(store_marketplace) / 'juspay-skills/skills/nix-haskell/SKILL.md').read_text()
 kolu = installed_plugins()['kolu@juspay-ai']
 assert kolu['installed'] and kolu['enabled'], kolu
 settings = tomllib.loads(config.read_text())
