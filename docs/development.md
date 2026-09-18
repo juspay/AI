@@ -37,6 +37,10 @@ after the root lock keeps their transitive dependency pins in sync.
 
 ## Daily updates
 
+The job runs at 12:00 UTC (08:00 EDT / 07:00 EST), an hour after agent-distro's
+update to allow its CI and merge to finish, and the report names the
+agent-distro revision moved.
+
 The daily workflow updates `agent-distro`, `juspay-skills`, and `kolu`, then
 updates the test and demo locks. OMP release-tag advancement happens in
 agent-distro; this repo follows its harness pins. The report reads OMP's `original.ref`

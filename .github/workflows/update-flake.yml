@@ -2,7 +2,10 @@ name: Update Flake
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    # Maintainers want bump PRs around 7am US Eastern. agent-distro updates
+    # at 11:00 UTC and self-merges after CI (about 15 minutes); an hour later
+    # picks up today's harness bump. GitHub cron is UTC: 08:00 EDT / 07:00 EST.
+    - cron: '0 12 * * *'
   workflow_dispatch:
 
 jobs:
@@ -23,12 +26,7 @@ jobs:
       - name: Read the pinned package versions
         id: versions-before
         run: |
-          version=$(jq -er '.nodes as $nodes | $nodes[$nodes.root.inputs["agent-distro"]].inputs["oh-my-pi"] as $omp | $nodes[$omp].original.ref' flake.lock)
-          echo "omp-version=$version" >> "$GITHUB_OUTPUT"
-          version=$(nix eval --raw .#codex.version)
-          echo "codex-version=$version" >> "$GITHUB_OUTPUT"
-          version=$(nix eval --raw .#claude.version)
-          echo "claude-version=$version" >> "$GITHUB_OUTPUT"
+          bash .github/scripts/read-versions.sh
 
       - name: Update all inputs
         id: lock
@@ -37,16 +35,13 @@ jobs:
           nix flake update --log-format raw 2>&1 | tee "$RUNNER_TEMP/flake-update.log"
           nix flake update --flake ./test --log-format raw 2>&1 | tee -a "$RUNNER_TEMP/flake-update.log"
           nix flake update --flake ./demo --log-format raw 2>&1 | tee -a "$RUNNER_TEMP/flake-update.log"
-          version=$(jq -er '.nodes as $nodes | $nodes[$nodes.root.inputs["agent-distro"]].inputs["oh-my-pi"] as $omp | $nodes[$omp].original.ref' flake.lock)
-          echo "omp-version=$version" >> "$GITHUB_OUTPUT"
-          version=$(nix eval --raw .#codex.version)
-          echo "codex-version=$version" >> "$GITHUB_OUTPUT"
-          version=$(nix eval --raw .#claude.version)
-          echo "claude-version=$version" >> "$GITHUB_OUTPUT"
+          bash .github/scripts/read-versions.sh
 
       - name: Describe the locked versions
         id: report
         env:
+          AGENT_DISTRO_BEFORE: ${{ steps.versions-before.outputs.agent-distro-rev }}
+          AGENT_DISTRO_AFTER: ${{ steps.lock.outputs.agent-distro-rev }}
           OMP_BEFORE: ${{ steps.versions-before.outputs.omp-version }}
           OMP_AFTER: ${{ steps.lock.outputs.omp-version }}
           CODEX_BEFORE: ${{ steps.versions-before.outputs.codex-version }}
@@ -68,7 +63,6 @@ jobs:
           body-path: ${{ steps.report.outputs.pr-body-path }}
           commit-message: "chore(flake): update inputs"
           labels: dependencies
-          assignees: ${{ github.repository_owner }}
 
   # Run the exact same CI (nix build + VM tests, ubuntu + macos) against the
   # bumped lock. A pull_request run of ci.yml for a github-actions[bot] PR only
