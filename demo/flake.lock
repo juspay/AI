@@ -13,16 +13,15 @@
         "oh-my-pi": "oh-my-pi"
       },
       "locked": {
-        "lastModified": 1789692201,
-        "narHash": "sha256-Ml1XJ7GWkGBvfdK9Gcyn3xnrNgBEqnn34W+jNmwn/A0=",
+        "lastModified": 1789692949,
+        "narHash": "sha256-0JmS+u3TF578TGJcll0G61nZt+AqyTIMIjtga/f6LG0=",
         "owner": "juspay",
         "repo": "agent-distro",
-        "rev": "4d070cd2119a3d584c54cc475d65b887f41017ca",
+        "rev": "523eacdbc5a1a0e20f0f6f488596e9bf5a50b8b9",
         "type": "github"
       },
       "original": {
         "owner": "juspay",
-        "ref": "init",
         "repo": "agent-distro",
         "type": "github"
       }
@@ -34,11 +33,11 @@
         "kolu": "kolu"
       },
       "locked": {
-        "lastModified": 1789692548,
-        "narHash": "sha256-d09oWoifLk5wdo9o6XMFskqlpMDO34PmPAed9l9TtQc=",
+        "lastModified": 1789693002,
+        "narHash": "sha256-DwluCSD074E2r6cBDAanz3WbseQfMAYu5/69hBkK/5A=",
         "owner": "juspay",
         "repo": "AI",
-        "rev": "7a7054c93930f31a47c614bd71086ef5d10a2780",
+        "rev": "bffd216ba13fecff45e29c888db868b558124f22",
         "type": "github"
       },
       "original": {
