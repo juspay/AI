@@ -12,14 +12,7 @@
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
       packages = ai.packages.${system};
-      # To upstream: wait for ACP responses rather than fixed startup sleeps.
-      # Keep every upstream discovery, gateway, and rebuild assertion intact.
-      testedFramework = pkgs.applyPatches {
-        name = "agent-distro-test-readiness";
-        src = ai.inputs.agent-distro;
-        patches = [ ./omp-readiness.patch ];
-      };
-      tests = import "${testedFramework}/test/lib.nix" {
+      tests = import "${ai.inputs.agent-distro}/test/lib.nix" {
         inherit pkgs;
         profile = ai.profiles.juspay;
         launchers = { inherit (packages) omp codex claude; picker = packages.default; };
