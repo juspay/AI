@@ -31,7 +31,7 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
 
-      - name: Test flake update policy and reporting
+      - name: Test flake update reporting
         if: runner.os == 'Linux'
         run: python3 .github/scripts/test-update-flake.py
 
@@ -57,13 +57,16 @@ jobs:
             --override-input flake .)
           attic push oss "$outs"
 
-      - name: Build all profile pickers and harnesses
+      - name: Build the picker and harnesses
         run: |
-          nix build --print-build-logs .#default .#vanilla .#kolu .#juspay
+          nix build --print-build-logs .#default .#omp .#codex .#claude
+
+      - uses: extractions/setup-just@v3
+        if: runner.os == 'Linux'
 
       - name: Wrapper package tests
         # The wrapper tests boot NixOS VMs, so they only run where a Linux
         # builder exists. `nix flake check` builds the whole checks set.
         if: runner.os == 'Linux'
         run: |
-          nix flake check -L ./coding-agents/test/standalone --override-input ai .
+          just test

@@ -23,33 +23,31 @@ jobs:
       - name: Read the pinned package versions
         id: versions-before
         run: |
-          version=$(nix eval --raw .#vanilla.codex.version)
+          version=$(jq -er '.nodes as $nodes | $nodes[$nodes.root.inputs["agent-distro"]].inputs["oh-my-pi"] as $omp | $nodes[$omp].original.ref' flake.lock)
+          echo "omp-version=$version" >> "$GITHUB_OUTPUT"
+          version=$(nix eval --raw .#codex.version)
           echo "codex-version=$version" >> "$GITHUB_OUTPUT"
-          version=$(nix eval --raw .#vanilla.claude.version)
+          version=$(nix eval --raw .#claude.version)
           echo "claude-version=$version" >> "$GITHUB_OUTPUT"
-
-      - name: Advance the oh-my-pi release pin
-        id: omp
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash .github/scripts/advance-omp-pin.sh
 
       - name: Update all inputs
         id: lock
         shell: bash
         run: |
           nix flake update --log-format raw 2>&1 | tee "$RUNNER_TEMP/flake-update.log"
-          version=$(nix eval --raw .#vanilla.codex.version)
+          nix flake update --flake ./test --log-format raw 2>&1 | tee -a "$RUNNER_TEMP/flake-update.log"
+          version=$(jq -er '.nodes as $nodes | $nodes[$nodes.root.inputs["agent-distro"]].inputs["oh-my-pi"] as $omp | $nodes[$omp].original.ref' flake.lock)
+          echo "omp-version=$version" >> "$GITHUB_OUTPUT"
+          version=$(nix eval --raw .#codex.version)
           echo "codex-version=$version" >> "$GITHUB_OUTPUT"
-          version=$(nix eval --raw .#vanilla.claude.version)
+          version=$(nix eval --raw .#claude.version)
           echo "claude-version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Describe the locked versions
         id: report
         env:
-          OMP_BEFORE: ${{ steps.omp.outputs.before }}
-          OMP_AFTER: ${{ steps.omp.outputs.after }}
-          OMP_LATEST: ${{ steps.omp.outputs.latest }}
+          OMP_BEFORE: ${{ steps.versions-before.outputs.omp-version }}
+          OMP_AFTER: ${{ steps.lock.outputs.omp-version }}
           CODEX_BEFORE: ${{ steps.versions-before.outputs.codex-version }}
           CODEX_AFTER: ${{ steps.lock.outputs.codex-version }}
           CLAUDE_BEFORE: ${{ steps.versions-before.outputs.claude-version }}
@@ -62,8 +60,8 @@ jobs:
           branch: update_flake_lock_action
           delete-branch: true
           add-paths: |
-            flake.nix
             flake.lock
+            test/flake.lock
           title: ${{ steps.report.outputs.pr-title }}
           body-path: ${{ steps.report.outputs.pr-body-path }}
           commit-message: "chore(flake): update inputs"
