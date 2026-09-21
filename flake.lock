@@ -12,11 +12,11 @@
         "oh-my-pi": "oh-my-pi"
       },
       "locked": {
-        "lastModified": 1789826772,
-        "narHash": "sha256-+3XA6Uk2ONe/yNXXT+9FRI7lcrZgO57su6Y2Nz9xEo4=",
+        "lastModified": 1789990593,
+        "narHash": "sha256-fGi1O7ZxCHAuPb6rYZCFj6WhlfiSvZhffMKqNaVP77M=",
         "owner": "juspay",
         "repo": "agent-distro",
-        "rev": "8bfa8a170f06322f28ba8f24d3f70ce025cc4279",
+        "rev": "6ade43825c5f2ee61b8e642140e6b7739a7d528d",
         "type": "github"
       },
       "original": {
@@ -305,16 +305,16 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1789752471,
-        "narHash": "sha256-iloWjtMRUOx7CQAUzvUvtqz0r+Djg42mQr9vxHDTy5w=",
+        "lastModified": 1789955453,
+        "narHash": "sha256-zjZCw7vDt27c+BOeKaI0R2XVfVmVMr2P84iWiMsPwYI=",
         "owner": "can1357",
         "repo": "oh-my-pi",
-        "rev": "78b753124d11f8dd3ae73e2524125890ff7c977e",
+        "rev": "d716bcf60ab0a2e7ece1fdf382c0d143fef1f307",
         "type": "github"
       },
       "original": {
         "owner": "can1357",
-        "ref": "v18.2.6",
+        "ref": "v18.2.7",
         "repo": "oh-my-pi",
         "type": "github"
       }
