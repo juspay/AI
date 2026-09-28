@@ -19,13 +19,13 @@ jobs:
       - uses: cachix/install-nix-action@v31
         with:
           github_access_token: ${{ github.token }}
-          # agent-distro's cache, so the delegated run substitutes the harnesses.
-          extra_nix_config: |
-            accept-flake-config = true
-            extra-substituters = https://cache.nixos.asia/oss
-            extra-trusted-public-keys = oss:KO872wNJkCDgmGN3xy9dT89WAhvv13EiKncTtHDItVU=
 
-      # Builds the shim, then runs agent-distro through it. The packages are
-      # deliberately unbuildable, so there is nothing else to check.
-      - name: Delegate to agent-distro
-        run: AI_HARNESS=omp AI_GATEWAY=0 nix run . -- --version
+      # The flake's only job is to refuse with the migration notice.
+      - name: Every entry point fails with the notice
+        run: |
+          for target in . .#omp .#codex .#claude; do
+            if nix run "$target" 2>err; then echo "$target ran; it must fail" >&2; exit 1; fi
+            grep -q "juspay/AI has moved" err || { cat err >&2; exit 1; }
+          done
+          if nix build --no-link . 2>err; then echo "build must fail" >&2; exit 1; fi
+          grep -q "juspay/AI has moved" err
