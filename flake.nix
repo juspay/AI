@@ -1,33 +1,43 @@
 {
-  description = "Juspay distribution of Oh My Pi, Codex, and Claude Code";
+  description = "Moved: the Juspay distribution is a profile of github:juspay/agent-distro";
 
-  nixConfig = {
-    extra-substituters = "https://cache.nixos.asia/oss";
-    extra-trusted-public-keys = "oss:KO872wNJkCDgmGN3xy9dT89WAhvv13EiKncTtHDItVU=";
-  };
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
-  inputs = {
-    # Framework, adapters, pickers, and harness pins. Harness versions follow
-    # agent-distro; our daily update moves it and Juspay's plugin sources.
-    agent-distro.url = "github:juspay/agent-distro";
+  outputs = { self, nixpkgs }:
+    let
+      inherit (nixpkgs) lib;
+      systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
+      forAllSystems = lib.genAttrs systems;
 
-    # Portable skill sources. Nothing is vendored into this repo; the shared
-    # profiles use juspay/skills directly, while kolu's plugin is passed through whole.
-    juspay-skills = { url = "github:juspay/skills"; flake = false; };
+      moved = ''
+        juspay/AI has moved. The Juspay distribution is the `juspay` profile of
+        github:juspay/agent-distro:
 
-    # kolu, for its `agent-plugin/` directory: a standard Agent Plugins 1.0.0
-    # package (plugin.json + mcp.json + skills/kolu/SKILL.md) that omp loads
-    # whole, rather than a skill we copy into our own bundle. It is a plain
-    # tree like juspay-skills — nothing here builds kolu — and unlike the skill
-    # it replaces, this path is *not* export-ignored, so an ordinary flake
-    # input can see it and `nix flake update` can bump it.
-    kolu = { url = "github:juspay/kolu"; flake = false; };
-  };
+          AI_PROFILE=juspay nix run github:juspay/agent-distro
+          AI_PROFILE=juspay AI_HARNESS=omp nix run github:juspay/agent-distro -- --version
 
-  outputs = { self, agent-distro, juspay-skills, kolu }:
-    let profile = import ./profile.nix { inherit juspay-skills kolu; };
-    in agent-distro.lib.mkFlake { inherit profile; } // {
-      # Resolved data for consumers, including overrides such as gateway = null.
-      profiles.juspay = profile;
+        Flakes that used juspay/AI as an input should compose
+        `agent-distro.lib.mkLaunchers` with `agent-distro.profiles.juspay`.
+        See https://github.com/juspay/agent-distro#readme.
+      '';
+
+      # `nix run github:juspay/AI` keeps working by delegating to agent-distro's
+      # unpinned default branch, so this repo needs no further lock bumps.
+      shim = system: nixpkgs.legacyPackages.${system}.writeShellApplication {
+        name = "ai";
+        text = ''
+          export AI_PROFILE=juspay
+          exec nix run github:juspay/agent-distro -- "$@"
+        '';
+      };
+    in
+    {
+      apps = forAllSystems (system: {
+        default = { type = "app"; program = lib.getExe (shim system); };
+      });
+
+      # Building or importing the old package fails with the migration note
+      # rather than producing a launcher that no longer receives updates.
+      packages = forAllSystems (_: { default = throw moved; });
     };
 }
