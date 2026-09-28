@@ -1,0 +1,18 @@
+warning: Git tree '/home/srid/code/AI/.worktrees/unable-homer' is dirty
+error:
+       … while calling the 'throw' builtin
+         at /home/srid/code/AI/.worktrees/unable-homer/flake.nix:6:15:
+            5|     let
+            6|       moved = throw ''
+             |               ^
+            7|         juspay/AI has moved. The Juspay distribution is the `juspay` profile of
+
+       error: juspay/AI has moved. The Juspay distribution is the `juspay` profile of
+       github:juspay/agent-distro:
+
+         AI_PROFILE=juspay nix run github:juspay/agent-distro
+         AI_PROFILE=juspay AI_HARNESS=omp nix run github:juspay/agent-distro -- --version
+
+       Flakes that used juspay/AI as an input should compose
+       `agent-distro.lib.mkLaunchers` with `agent-distro.profiles.juspay`.
+       See https://github.com/juspay/agent-distro#readme.
