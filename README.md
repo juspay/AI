@@ -3,7 +3,7 @@
 **Moved.** Run:
 
 ```bash
-AI_PROFILE=juspay nix run github:juspay/agent-distro
+nix run github:juspay/agent-distro -- github:juspay/skills
 ```
 
 See [agent-distro](https://github.com/juspay/agent-distro) for details.
