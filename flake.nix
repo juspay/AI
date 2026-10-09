@@ -1,12 +1,12 @@
 {
-  description = "Moved: the Juspay distribution is a profile of github:juspay/agent-distro";
+  description = "Moved: the Juspay distribution is the agent-distro profile in github:juspay/skills";
 
   outputs = { self }:
     let
       moved = throw ''
         juspay/AI has moved. Run:
 
-          AI_PROFILE=juspay nix run github:juspay/agent-distro
+          nix run github:juspay/agent-distro -- github:juspay/skills
       '';
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
       forAllSystems = f: builtins.listToAttrs (map (system: { name = system; value = f; }) systems);
